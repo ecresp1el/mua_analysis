@@ -134,7 +134,8 @@ class NeuralAnalysis:
                                     # After saving the downsampled data, create a new file path for the downsampled data
                                     output_file_path = os.path.join(sua_path, f"{file_name.split('.')[0]}_downsampled.npy")
                                     
-                                    recording_metrics = self.process_downsampled_data(output_file_path)
+                                    recording_metrics = self.process_downsampled_data(sua_path, file_name)
+
                                     
                                     recording_info = {
                                         "group_name": group_name,
@@ -162,7 +163,7 @@ class NeuralAnalysis:
         # Return the recording results dictionary: the keys are group names, the values are dictionaries of recording names and results
         return recording_results
         
-    def process_downsampled_data(self, downsampled_file_path):
+    def process_downsampled_data(self, sua_path, file_name):
         """
         Process the downsampled data to compute RMS values and identify good and noisy channels.
 
@@ -170,7 +171,10 @@ class NeuralAnalysis:
         - downsampled_file_path: str, the path to the downsampled data file
         """
         
-        # Step 1: Load the downsampled data
+        # Construct the correct path to the downsampled data file
+        downsampled_file_path = os.path.join(sua_path, f"{file_name.split('.')[0]}_downsampled.npy")
+    
+        # Load the downsampled data from the correct path
         downsampled_data = np.load(downsampled_file_path)
         
         # Step 2: Compute the RMS value for each channel
