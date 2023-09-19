@@ -46,6 +46,10 @@ class NeuralAnalysis:
                 total_recordings_in_group = sum(1 for item in os.listdir(group_path) if os.path.isdir(os.path.join(group_path, item)))
                 print(f"Group {group_index + 1}/{total_groups}: {group_name} has {total_recordings_in_group} recordings")
 
+                #add the group name to the dicionary
+                recording_results[group_name] = {}
+
+
                 for recording_index, recording_name in enumerate(os.listdir(group_path)):
                     recording_path = os.path.join(group_path, recording_name)
                     
@@ -105,7 +109,7 @@ class NeuralAnalysis:
                                     downsampled_data = np.median(reshaped_data.reshape(-1, self.n_channels, downsample_factor), axis=2)
 
                                     # Step 2.1: Save the downsampled data to a file
-                                    output_file_path = os.path.join(sua_path, f"{file_name.split('.')[0]}_downsampled.npy")
+                                    output_file_path = os.path.join(sua_path, f"{os.path.splitext(file_name)[0]}_downsampled.npy")
                                     start_time = time()
                                     np.save(output_file_path, downsampled_data)
                                     end_time = time()
