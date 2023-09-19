@@ -176,17 +176,21 @@ class NeuralAnalysis:
         
         # Step 2: Compute the RMS value for each channel
         rms_values = np.sqrt(np.mean(np.square(downsampled_data), axis=0)) #rows are time points, columns are channels, so axis=0 is the channels
+        print(f"RMS values from proccess_downsampled_data method: {rms_values}")
         
         # Step 3: Identify the 1st and 3rd quartiles of the RMS values
-        q1 = np.percentile(rms_values, 25)
-        q3 = np.percentile(rms_values, 75)
-        iqr = q3 - q1
+        q1 = np.percentile(rms_values, 25) #percentile returns the qth percentile(s) of the array elements
+        q3 = np.percentile(rms_values, 75) #percentile returns the qth percentile(s) of the array elements 
+        iqr = q3 - q1 #interquartile range is the difference between the 3rd and 1st quartiles
         
         # Step 4: Mark channels as excessively noisy
-        lower_bound = q1 - 3 * iqr
-        upper_bound = q3 + 3 * iqr
-        noisy_channels = np.where((rms_values < lower_bound) | (rms_values > upper_bound))[0]
-        good_channels = np.setdiff1d(np.arange(self.n_channels), noisy_channels)
+        lower_bound = q1 - 3 * iqr #lower bound is the 1st quartile minus 3 times the interquartile range 
+        upper_bound = q3 + 3 * iqr #upper bound is the 3rd quartile plus 3 times the interquartile range 
+        
+        # Step 5: Identify good and noisy channels based on the RMS values and bounds
+        # to get the indices of the noisy channels, we need to use np.where to get the indices of the values that are less than the lower bound or greater than the upper bound
+        noisy_channels = np.where((rms_values < lower_bound) | (rms_values > upper_bound))[0] #where returns a tuple, so we need to index it to get the array
+        good_channels = np.setdiff1d(np.arange(self.n_channels), noisy_channels) #setdiff1d returns the set difference of two arrays, so we get the good channels by subtracting the noisy channels from the total number of channels
         
         # Store the results in a dictionary
         recording_results = {
@@ -200,7 +204,9 @@ class NeuralAnalysis:
         # Print the identified good and noisy channels
         print(f"Good channels: {good_channels}")
         print(f"Noisy channels: {noisy_channels}")
-
+        print(f"Min and Max of downsampled data: {np.min(downsampled_data)} and {np.max(downsampled_data)}")
+        
+        
         # You can return the results to use them later
         del downsampled_data # Clear the large variables to free up memory
         gc.collect() # Call the garbage collector to free up memory
