@@ -145,8 +145,8 @@ class NeuralAnalysis:
                                         "good_channels": recording_metrics['good_channels'],
                                         "noisy_channels": recording_metrics['noisy_channels']
                                     }
-
-                                    recording_results.append(recording_info)
+                                    
+                                    recording_results[group_name][recording_name] = recording_info
                                     
                                     print(f"Processed recording {recording_index + 1}/{total_recordings_in_group} in group {group_index + 1}/{total_groups}")
                         else:
