@@ -1,5 +1,5 @@
 import os
-from scipy.signal import butter, filtfilt, gaussian, convolve
+from scipy.signal import butter, filtfilt, gaussian, convolve, decimate
 import numpy as np
 from time import time 
 
@@ -125,13 +125,14 @@ class NeuralAnalysis:
                                         This groups every 3 time points together, facilitating the median resampling. We then take the median along this third dimension to perform the downsampling, which reduces the sampling rate by a factor of 3.
                                     """
                                     
-                                    # Step 2: Downsample the data from 30kHz to 10kHz using median resampling
-                                    downsample_factor = 3 
+                                    # Step 2: Downsample the data from 30kHz to 10kHz using decimation
+                                    downsample_factor = 3
                                     downsampled_data = np.empty((reshaped_data.shape[0] // downsample_factor, self.n_channels))
 
                                     for channel_idx in range(self.n_channels):
+                                        print(f"Processing channel {channel_idx + 1}/{self.n_channels}")  # Print the current channel index
                                         channel_data = reshaped_data[:, channel_idx]
-                                        downsampled_channel_data = np.median(channel_data.reshape(-1, downsample_factor), axis=1)
+                                        downsampled_channel_data = decimate(channel_data, downsample_factor)
                                         downsampled_data[:, channel_idx] = downsampled_channel_data
 
                                     # Step 2.1: Save the downsampled data to a file
