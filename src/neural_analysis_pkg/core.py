@@ -112,10 +112,8 @@ class NeuralAnalysis:
                                         # If the downsampled data is slightly longer or shorter than the expected length, trim or pad it
                                         if len(downsampled_channel_data) > expected_length:
                                             downsampled_channel_data = downsampled_channel_data[:expected_length]
-                                            print(f"Downsampled data is longer than expected length: {len(downsampled_channel_data)}"
                                         elif len(downsampled_channel_data) < expected_length:
                                             downsampled_channel_data = np.pad(downsampled_channel_data, (0, expected_length - len(downsampled_channel_data)))
-                                            print(f"Downsampled data is shorter than expected length: {len(downsampled_channel_data)}")
 
                                         # Store the downsampled data in the appropriate column of the downsampled_data array
                                         downsampled_data[:, channel_idx] = downsampled_channel_data #what is the precision at this point?
