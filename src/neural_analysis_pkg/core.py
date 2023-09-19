@@ -35,7 +35,7 @@ class NeuralAnalysis:
         total_groups = sum(1 for item in os.listdir(spikestuff_path) if os.path.isdir(os.path.join(spikestuff_path, item)))
         print(f"Total number of groups: {total_groups}")
         
-        recording_results = []
+        recording_results = {}  # Initialize an empty dictionary to store the results
    
         # Loop through all the groups in the SpikeStuff folder
         group_index = 0  # Add a group index counter here
