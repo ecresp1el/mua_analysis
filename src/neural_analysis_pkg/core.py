@@ -126,7 +126,7 @@ class NeuralAnalysis:
                                         downsampled_data[:, channel_idx] = downsampled_channel_data #what is the precision at this point?
                                     
                                     # Print the min and max of the downsampled data after processing all the channels
-                                    print(f"Min and Max during process_dat_file method: {np.min(downsampled_data)} and {np.max(downsampled_data)}")
+                                    print(f"Min and Max for all channels in a recording: {np.min(downsampled_data)} and {np.max(downsampled_data)}")
                                         
                                     # Save the downsampled data to a .npy file
                                     np.save(output_file_path, downsampled_data)
