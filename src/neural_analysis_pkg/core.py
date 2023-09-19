@@ -161,7 +161,7 @@ class NeuralAnalysis:
         # Return the recording results dictionary: the keys are group names, the values are dictionaries of recording names and results
         return recording_results
         
-    def process_downsampled_data(self, sua_path, file_name):
+    def process_downsampled_data(self, downsampled_file_path):
         """
         Process the downsampled data to compute RMS values and identify good and noisy channels.
 
@@ -170,7 +170,6 @@ class NeuralAnalysis:
         """
         
         # Construct the correct path to the downsampled data file
-        downsampled_file_path = os.path.join(sua_path, f"{file_name.split('.')[0]}_downsampled.npy")
     
         # Load the downsampled data from the correct path
         downsampled_data = np.load(downsampled_file_path)
