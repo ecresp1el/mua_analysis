@@ -51,8 +51,8 @@ class NeuralAnalysis:
 
                         # Loop through all recordings in the group folder
                         all_recording_names = os.listdir(group_path)
-                        total_recordings_in_group = len(all_recording_names)
-                        print(f"Group {group_index + 1}/{total_groups}: {group_name} has {total_recordings_in_group} recordings")
+                        #total_recordings_in_group = len(all_recording_names)
+                        #print(f"Group {group_index + 1}/{total_groups}: {group_name} has {total_recordings_in_group} recordings")
 
                         for recording_index, recording_name in enumerate(all_recording_names):
                             recording_path = os.path.join(group_path, recording_name)
