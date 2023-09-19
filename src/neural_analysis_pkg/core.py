@@ -114,8 +114,6 @@ class NeuralAnalysis:
                                         # Store the downsampled data in the appropriate column of the downsampled_data array
                                         downsampled_data[:, channel_idx] = downsampled_channel_data #what is the precision at this point?
 
-                                    # Step 2.1: Save the downsampled data to a file
-                                    output_file_path = os.path.join(recording_path, f"{file_name.split('.')[0]}_downsampled.npy")
                                     
                                     np.save(output_file_path, downsampled_data)
                                     end_time = time() # Stop the timer here
