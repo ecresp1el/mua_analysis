@@ -112,16 +112,18 @@ class NeuralAnalysis:
                                         # If the downsampled data is slightly longer or shorter than the expected length, trim or pad it
                                         if len(downsampled_channel_data) > expected_length:
                                             downsampled_channel_data = downsampled_channel_data[:expected_length]
+                                            print(f"Downsampled data is longer than expected length: {len(downsampled_channel_data)}"
                                         elif len(downsampled_channel_data) < expected_length:
                                             downsampled_channel_data = np.pad(downsampled_channel_data, (0, expected_length - len(downsampled_channel_data)))
+                                            print(f"Downsampled data is shorter than expected length: {len(downsampled_channel_data)}")
 
                                         # Store the downsampled data in the appropriate column of the downsampled_data array
                                         downsampled_data[:, channel_idx] = downsampled_channel_data #what is the precision at this point?
-                                        print(f"Min and Max during process_dat_file method: {np.min(downsampled_data)} and {np.max(downsampled_data)}")
-                                        del channel_data
-                                        gc.collect() # Call the garbage collector to free up memory for the next channel data
-
                                     
+                                    # Print the min and max of the downsampled data after processing all the channels
+                                    print(f"Min and Max during process_dat_file method: {np.min(downsampled_data)} and {np.max(downsampled_data)}")
+                                        
+                                    # Save the downsampled data to a .npy file
                                     np.save(output_file_path, downsampled_data)
                                     end_time = time() # Stop the timer here
                                     
