@@ -108,7 +108,8 @@ class NeuralAnalysis:
                                         print(f"Processing channel {channel_idx + 1}/{self.n_channels}")
 
                                         # Get the data for the current channel
-                                        channel_data = reshaped_data[:, channel_idx]
+                                        channel_data = reshaped_data[:, channel_idx].astype(np.float32)
+
 
                                         # Downsample the channel data using resample_poly
                                         downsampled_channel_data = resample_poly(channel_data, up=1, down=downsample_factor)
