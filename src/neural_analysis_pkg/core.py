@@ -3,6 +3,7 @@ from scipy.signal import butter, filtfilt, gaussian, convolve, resample_poly
 import numpy as np
 from time import time 
 import gc 
+import pandas as pd 
 
 
 class NeuralAnalysis:

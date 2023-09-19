@@ -21,6 +21,7 @@ numpy=1.24.3=py38h57a7bef_0
 numpy-base=1.24.3=py38hc93c6d9_0
 openssl=3.0.10=hca72f7f_2
 packaging=23.1=py38hecd8cb5_0
+pandas>=1.3.3
 pip=23.2.1=py38hecd8cb5_0
 pooch=1.4.0=pyhd3eb1b0_0
 pycparser=2.21=pyhd3eb1b0_0
