@@ -102,11 +102,35 @@ class NeuralAnalysis:
                                     After taking the median along the third dimension, your data array will have a shape of (30000, 32), effectively reducing the number of data points by a factor of 3 and giving you a 10kHz sampling rate.
 
                                     This reshaping step is a necessary part of the median resampling process in order to downsample your data to the desired 10kHz sampling rate
-                                    """
+                                    """    
                                     
-                                    #Step 2: Downsample the data from 30kHz to 10kHz using median resampling
+                                    # Step 2: Downsample the data to 10kHz using median resampling
                                     downsample_factor = 3
-                                    downsampled_data = np.median(reshaped_data.reshape(-1, self.n_channels, downsample_factor), axis=2)
+
+                                    # Find the new number of time points that is divisible by the downsample factor
+                                    """
+                                    In this line, we are calculating the largest number of time points that is less than or equal
+                                    to the current number of time points and is divisible by the downsample factor (3 in this case).
+                                    The // operator performs integer division, which gives the quotient of the division as an integer, effectively discarding the remainder.
+                                    
+                                    So, reshaped_data.shape[0] // downsample_factor gives the largest number of complete groups of 3 time points that can be formed from the data. 
+                                    We then multiply by the downsample factor to find the total number of time points that will be included in the downsampled data.
+                                    
+                                    reshaped_data[:new_num_time_points]
+
+                                        Here we are slicing the reshaped_data array to only include the first new_num_time_points time points. T
+                                        This ensures that the number of time points is divisible by the downsample factor, which is necessary to avoid a ValueError during the subsequent reshaping step.
+                                        
+                                    downsampled_data = np.median(reshaped_data[:new_num_time_points].reshape(-1, self.n_channels, downsample_factor), axis=2)
+
+                                        fter slicing the array to have the correct number of time points, we reshape it to have a third dimension with a size equal to the downsample factor. 
+                                        This groups every 3 time points together, facilitating the median resampling. We then take the median along this third dimension to perform the downsampling, which reduces the sampling rate by a factor of 3.
+                                    """
+                                    new_num_time_points = (reshaped_data.shape[0] // downsample_factor) * downsample_factor
+
+                                    # Reshape the data to have a third dimension of size 3 to facilitate median resampling
+                                    downsampled_data = np.median(reshaped_data[:new_num_time_points].reshape(-1, self.n_channels, downsample_factor), axis=2)
+
 
                                     # Step 2.1: Save the downsampled data to a file
                                     output_file_path = os.path.join(sua_path, f"{os.path.splitext(file_name)[0]}_downsampled.npy")
