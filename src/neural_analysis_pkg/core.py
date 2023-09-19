@@ -2,6 +2,8 @@ import os
 from scipy.signal import butter, filtfilt, gaussian, convolve, resample_poly
 import numpy as np
 from time import time 
+import gc 
+
 
 class NeuralAnalysis:
     """ 
@@ -110,14 +112,24 @@ class NeuralAnalysis:
                                             downsampled_channel_data = np.pad(downsampled_channel_data, (0, expected_length - len(downsampled_channel_data)))
 
                                         # Store the downsampled data in the appropriate column of the downsampled_data array
-                                        downsampled_data[:, channel_idx] = downsampled_channel_data
+                                        downsampled_data[:, channel_idx] = downsampled_channel_data #what is the precision at this point?
 
                                     # Step 2.1: Save the downsampled data to a file
                                     output_file_path = os.path.join(recording_path, f"{file_name.split('.')[0]}_downsampled.npy")
                                     
                                     np.save(output_file_path, downsampled_data)
                                     end_time = time() # Stop the timer here
-                                    print(f"Downsampled data saved to {output_file_path} in {end_time - start_time:.2f} seconds")
+                                    
+                                    # Clear the large variables to free up memory
+                                    del downsampled_data
+                                    del data
+                                    del reshaped_data
+                                    gc.collect()  # Call the garbage collector to free up memory
+                                    
+                                    elapsed_time = end_time - start_time # Calculate the elapsed time
+                                    minutes, seconds = divmod(elapsed_time, 60) # Convert elapsed time to minutes and seconds
+                                    
+                                    print(f"Downsampled data saved to {output_file_path} in {int(minutes)} minutes and {seconds:.2f} seconds")
 
                                     # Step 3: Compute the RMS value for each channel
                                     #rms_values = np.sqrt(np.mean(np.square(downsampled_data), axis=0))
