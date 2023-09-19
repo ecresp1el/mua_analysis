@@ -117,6 +117,8 @@ class NeuralAnalysis:
 
                                         # Store the downsampled data in the appropriate column of the downsampled_data array
                                         downsampled_data[:, channel_idx] = downsampled_channel_data #what is the precision at this point?
+                                        del channel_data
+                                        gc.collect() # Call the garbage collector to free up memory for the next channel data
 
                                     
                                     np.save(output_file_path, downsampled_data)
@@ -200,6 +202,9 @@ class NeuralAnalysis:
         print(f"Noisy channels: {noisy_channels}")
 
         # You can return the results to use them later
+        del downsampled_data # Clear the large variables to free up memory
+        gc.collect() # Call the garbage collector to free up memory
+        
         return recording_results
 
 		                    
