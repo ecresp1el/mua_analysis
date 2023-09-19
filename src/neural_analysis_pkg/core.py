@@ -34,9 +34,9 @@ class NeuralAnalysis:
         # Get the total number of groups (only count directories, not files)
         total_groups = sum(1 for item in os.listdir(spikestuff_path) if os.path.isdir(os.path.join(spikestuff_path, item)))
         print(f"Total number of groups: {total_groups}")
-
-        recording_results = {}
         
+        recording_results = []
+   
         # Loop through all the groups in the SpikeStuff folder
         group_index = 0  # Add a group index counter here
         for group_name in os.listdir(spikestuff_path):
@@ -134,6 +134,20 @@ class NeuralAnalysis:
                                     # After saving the downsampled data, create a new file path for the downsampled data
                                     output_file_path = os.path.join(sua_path, f"{file_name.split('.')[0]}_downsampled.npy")
                                     
+                                    recording_metrics = self.process_downsampled_data(output_file_path)
+                                    
+                                    recording_info = {
+                                        "group_name": group_name,
+                                        "recording_name": recording_name,
+                                        "downsampled_path": output_file_path,
+                                        "rms_values": recording_metrics['rms_values'], 
+                                        "iqr": recording_metrics['iqr'],
+                                        "good_channels": recording_metrics['good_channels'],
+                                        "noisy_channels": recording_metrics['noisy_channels']
+                                    }
+
+                                    recording_results.append(recording_info)
+                    
                                     # Process the downsampled data to compute RMS and other metrics
                                     recording_results[group_name][recording_name] = self.process_downsampled_data(output_file_path)
                                     
@@ -141,6 +155,9 @@ class NeuralAnalysis:
                         else:
                             print(f"No SUA directory found in {recording_path}")  # For testing purposes
             group_index += 1  # Increment the group index counter here
+            
+        self.recording_results_df = pd.DataFrame(recording_results)
+        self.recording_results_df.to_csv(os.path.join(spikestuff_path, 'recording_results.csv'), index=False)
         
         # Return the recording results dictionary: the keys are group names, the values are dictionaries of recording names and results
         return recording_results
@@ -172,10 +189,11 @@ class NeuralAnalysis:
         
         # Store the results in a dictionary
         recording_results = {
-            "rms_values": rms_values,
+            "downsampled_path": downsampled_file_path,  # Include the file path in your results dictionary
+            "rms_values": list(rms_values),
             "iqr": iqr,
-            "good_channels": good_channels,
-            "noisy_channels": noisy_channels,
+            "good_channels": list(good_channels),
+            "noisy_channels": list(noisy_channels),
         }
         
         # Print the identified good and noisy channels
