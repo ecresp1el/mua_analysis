@@ -64,7 +64,7 @@ class NeuralAnalysis:
                                     # Now, dat_file_path is the path to a .dat file
                                     # Call your .dat file processing function here
                                         # Step 1: Read the .dat file
-                                    data = np.fromfile(dat_file_path, dtype=dtype) #dtype=np.int16 by default
+                                    data = np.fromfile(dat_file_path, dtype=np.int16) #dtype=np.int16 by default
                                     reshaped_data = data.reshape((-1, self.n_channels))
                                     
                                     # Step 2: Compute the RMS value for each channel
@@ -86,17 +86,17 @@ class NeuralAnalysis:
                         else:
                             print(f"No SUA directory found in {recording_path}")  # For testing
                             
-    def read_dat_file(self):
+    #def read_dat_file(self):
         # code to read the .dat file and set self.data
 
-    def process_dat_file(self):
+    #def process_dat_file(self):
         # code to process the .dat file and set self.good_channels and self.noisy_channels
 
-    def common_average_reference(self):
+    #def common_average_reference(self):
         # code to apply common average reference to self.data using self.good_channels
 
-    def isolate_MUA(self):
+    #def isolate_MUA(self):
         # code to isolate MUA from self.data
 
-    def estimate_firing_rate(self):
+    #def estimate_firing_rate(self):
         # code to estimate firing rate from the data obtained in isolate_MUA
