@@ -9,8 +9,8 @@ setup(
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     url="https://github.com/ecresp1el/mua_analysis",  # Your repository URL
-    packages=find_packages(where="src"),
-    package_dir={"": "src"},
+    packages=find_packages(),  # Removed where argument
+    # Removed package_dir line
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",  # or another appropriate license
@@ -21,5 +21,5 @@ setup(
         "scipy>=1.10.1",
     ],
     python_requires='>=3.8.18',
-
 )
+
