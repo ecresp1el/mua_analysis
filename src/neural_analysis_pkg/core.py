@@ -103,9 +103,7 @@ class NeuralAnalysis:
 
                                     This reshaping step is a necessary part of the median resampling process in order to downsample your data to the desired 10kHz sampling rate
                                     """    
-                                    
-                                    # Step 2: Downsample the data to 10kHz using median resampling
-                                    downsample_factor = 3
+
 
                                     # Find the new number of time points that is divisible by the downsample factor
                                     """
@@ -126,14 +124,18 @@ class NeuralAnalysis:
                                         fter slicing the array to have the correct number of time points, we reshape it to have a third dimension with a size equal to the downsample factor. 
                                         This groups every 3 time points together, facilitating the median resampling. We then take the median along this third dimension to perform the downsampling, which reduces the sampling rate by a factor of 3.
                                     """
-                                    new_num_time_points = (reshaped_data.shape[0] // downsample_factor) * downsample_factor
+                                    
+                                    # Step 2: Downsample the data from 30kHz to 10kHz using median resampling
+                                    downsample_factor = 3 
+                                    downsampled_data = np.empty((reshaped_data.shape[0] // downsample_factor, self.n_channels))
 
-                                    # Reshape the data to have a third dimension of size 3 to facilitate median resampling
-                                    downsampled_data = np.median(reshaped_data[:new_num_time_points].reshape(-1, self.n_channels, downsample_factor), axis=2)
-
+                                    for channel_idx in range(self.n_channels):
+                                        channel_data = reshaped_data[:, channel_idx]
+                                        downsampled_channel_data = np.median(channel_data.reshape(-1, downsample_factor), axis=1)
+                                        downsampled_data[:, channel_idx] = downsampled_channel_data
 
                                     # Step 2.1: Save the downsampled data to a file
-                                    output_file_path = os.path.join(sua_path, f"{os.path.splitext(file_name)[0]}_downsampled.npy")
+                                    output_file_path = os.path.join(recording_path, f"{file_name.split('.')[0]}_downsampled.npy")
                                     start_time = time()
                                     np.save(output_file_path, downsampled_data)
                                     end_time = time()
