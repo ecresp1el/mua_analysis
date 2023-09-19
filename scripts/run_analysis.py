@@ -1,7 +1,7 @@
 from neural_analysis_pkg.core import NeuralAnalysis
 
 # Define the path to your project folder
-project_folder_path ='/home/cresp1el-local/Documents/MATLAB/Data/lmc_project_v2'
+project_folder_path ='/home/cresp1el-local/Documents/MATLAB/Data/lmc_project_v2/Whisker'
 
 # Initialize the NeuralAnalysis class with the project folder path
 analysis = NeuralAnalysis(project_folder_path)
