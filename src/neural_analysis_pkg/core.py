@@ -75,9 +75,13 @@ class NeuralAnalysis:
                                     
                                     # Step 1: Read the .dat file
                                     data = np.fromfile(dat_file_path, dtype=self.dtype)
+                                    #check the initial data loading 
+                                    print(f"Initial data min: {np.min(data)}, max: {np.max(data)}")
                                     
                                     # Step 1.1: Reshape the data to create a 2D array where each row is a channel and each column is a time point
                                     reshaped_data = data.reshape((-1, self.n_channels))
+                                    #check data after reshaping
+                                    print(f"Reshaped data min: {np.min(reshaped_data)}, max: {np.max(reshaped_data)}")
                                     
                                     # Log the shape and data type of the loaded data
                                     print(f"Data shape: {reshaped_data.shape}, Data type: {reshaped_data.dtype}")
@@ -108,6 +112,8 @@ class NeuralAnalysis:
 
                                         # Downsample the channel data using resample_poly
                                         downsampled_channel_data = resample_poly(channel_data, up=1, down=downsample_factor)
+                                        
+                                        print(f"Downsampled data min: {np.min(downsampled_channel_data)}, max: {np.max(downsampled_channel_data)}")
 
                                         # If the downsampled data is slightly longer or shorter than the expected length, trim or pad it
                                         if len(downsampled_channel_data) > expected_length:
