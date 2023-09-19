@@ -117,6 +117,7 @@ class NeuralAnalysis:
 
                                         # Store the downsampled data in the appropriate column of the downsampled_data array
                                         downsampled_data[:, channel_idx] = downsampled_channel_data #what is the precision at this point?
+                                        print(f"Min and Max during process_dat_file method: {np.min(downsampled_data)} and {np.max(downsampled_data)}")
                                         del channel_data
                                         gc.collect() # Call the garbage collector to free up memory for the next channel data
 
