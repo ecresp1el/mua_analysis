@@ -25,68 +25,80 @@ class NeuralAnalysis:
         - project_folder_path: str, the path to the project folder containing all the group and recording folders
 
         """
-        spikestuff_path = os.path.join(project_folder_path, "SpikeStuff")
+        spikestuff_path = os.path.join(project_folder_path, "SpikeStuff") # Define the path to the SpikeStuff folder, output is a string
+        
+        # Get the total number of groups (only count directories, not files)
+        total_groups = sum(1 for item in os.listdir(spikestuff_path) if os.path.isdir(os.path.join(spikestuff_path, item)))
+        print(f"Total number of groups: {total_groups}")
 
-        # Loop through all groups in the SpikeStuff folder
-        all_group_names = os.listdir(spikestuff_path)
-        total_groups = len(all_group_names)
-        print(f"Total groups: {total_groups}")
-     
-        for group_index, group_name in enumerate(all_group_names):
+        # Loop through all the groups in the SpikeStuff folder
+        group_index = 0  # Add a group index counter here
+        for group_name in os.listdir(spikestuff_path):
             group_path = os.path.join(spikestuff_path, group_name)
 
-            # Ensure it's a directory and not a file
+            # Ensure it's a directory and not a file , great job!
             if os.path.isdir(group_path):
-
-                # Loop through all recordings in the group folder
-                all_recording_names = os.listdir(group_path)
-                total_recordings_in_group = len(all_recording_names)
+                
+            # Get the total number of recordings in the current group (only count directories, not files)
+                total_recordings_in_group = sum(1 for item in os.listdir(group_path) if os.path.isdir(os.path.join(group_path, item)))
                 print(f"Group {group_index + 1}/{total_groups}: {group_name} has {total_recordings_in_group} recordings")
 
-                for recording_index, recording_name in enumerate(all_recording_names):
+                for recording_index, recording_name in enumerate(os.listdir(group_path)):
                     recording_path = os.path.join(group_path, recording_name)
-
+                    
                     # Ensure it's a directory and not a file
                     if os.path.isdir(recording_path):
 
-                        # Define the path to the SUA folder within the current recording folder
-                        sua_path = os.path.join(recording_path, 'SUA')
+                        # Loop through all recordings in the group folder
+                        all_recording_names = os.listdir(group_path)
+                        total_recordings_in_group = len(all_recording_names)
+                        print(f"Group {group_index + 1}/{total_groups}: {group_name} has {total_recordings_in_group} recordings")
 
-                        # Check if the SUA directory exists before trying to access it
-                        if os.path.isdir(sua_path):
+                        for recording_index, recording_name in enumerate(all_recording_names):
+                            recording_path = os.path.join(group_path, recording_name)
 
-                            # Loop through all files in the SUA folder to find .dat files
-                            for file_name in os.listdir(sua_path):
-                                if file_name.endswith(".dat"):
-                                    dat_file_path = os.path.join(sua_path, file_name)
-                                    
-                                    # Now, dat_file_path is the path to a .dat file
-                                    # Call your .dat file processing function here
-                                        # Step 1: Read the .dat file
-                                    data = np.fromfile(dat_file_path, dtype=self.dtype)
-                                    reshaped_data = data.reshape((-1, self.n_channels))
-                                    
-                                    # Log the shape and data type of the loaded data
-                                    print(f"Data shape: {reshaped_data.shape}, Data type: {reshaped_data.dtype}")
+                            # Ensure it's a directory and not a file
+                            if os.path.isdir(recording_path):
 
-                                    # Step 2: Compute the RMS value for each channel
-                                    rms_values = np.sqrt(np.mean(np.square(reshaped_data), axis=0))
-                                    
-                                    # Step 3: Identify the 1st and 3rd quartiles of the RMS values
-                                    q1 = np.percentile(rms_values, 25)
-                                    q3 = np.percentile(rms_values, 75)
-                                    iqr = q3 - q1
-                                    
-                                    # Step 4: Mark channels as excessively noisy
-                                    lower_bound = q1 - 3 * iqr
-                                    upper_bound = q3 + 3 * iqr
-                                    
-                                    noisy_channels = np.where((rms_values < lower_bound) | (rms_values > upper_bound))[0]
-                                    good_channels = np.setdiff1d(np.arange(self.n_channels), noisy_channels)
+                                # Define the path to the SUA folder within the current recording folder
+                                sua_path = os.path.join(recording_path, 'SUA')
 
-                                    print(f"Processing recording {recording_index + 1}/{total_recordings_in_group} in group {group_index + 1}/{total_groups}")
-                    else:
-                            print(f"No SUA directory found in {recording_path}")  # For testing
+                                # Check if the SUA directory exists before trying to access it
+                                if os.path.isdir(sua_path):
+
+                                    # Loop through all files in the SUA folder to find .dat files
+                                    for file_name in os.listdir(sua_path):
+                                        if file_name.endswith(".dat"):
+                                            dat_file_path = os.path.join(sua_path, file_name)
+                                            
+                                            # Now, dat_file_path is the path to a .dat file
+                                            # Call your .dat file processing function here
+                                                # Step 1: Read the .dat file
+                                            data = np.fromfile(dat_file_path, dtype=self.dtype)
+                                            reshaped_data = data.reshape((-1, self.n_channels))
+                                            
+                                            # Log the shape and data type of the loaded data
+                                            print(f"Data shape: {reshaped_data.shape}, Data type: {reshaped_data.dtype}")
+
+                                            # Step 2: Compute the RMS value for each channel
+                                            rms_values = np.sqrt(np.mean(np.square(reshaped_data), axis=0))
+                                            
+                                            # Step 3: Identify the 1st and 3rd quartiles of the RMS values
+                                            q1 = np.percentile(rms_values, 25)
+                                            q3 = np.percentile(rms_values, 75)
+                                            iqr = q3 - q1
+                                            
+                                            # Step 4: Mark channels as excessively noisy
+                                            lower_bound = q1 - 3 * iqr
+                                            upper_bound = q3 + 3 * iqr
+                                            
+                                            noisy_channels = np.where((rms_values < lower_bound) | (rms_values > upper_bound))[0]
+                                            good_channels = np.setdiff1d(np.arange(self.n_channels), noisy_channels)
+
+                                            print(f"Processing recording {recording_index + 1}/{total_recordings_in_group} in group {group_index + 1}/{total_groups}")
+                        else:
+                            print(f"No SUA directory found in {recording_path}")  # For testing purposes
+            group_index += 1  # Increment the group index counter here
 	      
 		                    
     #def read_dat_file(self):
