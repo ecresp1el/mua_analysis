@@ -55,7 +55,6 @@ class NeuralAnalysis:
                 for recording_index, recording_name in enumerate(os.listdir(group_path)):
                     recording_path = os.path.join(group_path, recording_name)
                     
-
                     # Ensure it's a directory and not a file
                     if os.path.isdir(recording_path):
 
@@ -130,46 +129,61 @@ class NeuralAnalysis:
                                     minutes, seconds = divmod(elapsed_time, 60) # Convert elapsed time to minutes and seconds
                                     
                                     print(f"Downsampled data saved to {output_file_path} in {int(minutes)} minutes and {seconds:.2f} seconds")
-
-                                    # Step 3: Compute the RMS value for each channel
-                                    #rms_values = np.sqrt(np.mean(np.square(downsampled_data), axis=0))
                                     
-                                    # Step 4: Identify the 1st and 3rd quartiles of the RMS values
-                                    #q1 = np.percentile(rms_values, 25)
-                                    #q3 = np.percentile(rms_values, 75)
-                                    #iqr = q3 - q1
+                                    # After saving the downsampled data, create a new file path for the downsampled data
+                                    output_file_path = os.path.join(sua_path, f"{file_name.split('.')[0]}_downsampled.npy")
                                     
-                                    # Step 5: Mark channels as excessively noisy
-                                    #lower_bound = q1 - 3 * iqr
-                                    #upper_bound = q3 + 3 * iqr
-                                    
-                                    #noisy_channels = np.where((rms_values < lower_bound) | (rms_values > upper_bound))[0]
-                                    #good_channels = np.setdiff1d(np.arange(self.n_channels), noisy_channels)
-
-                                    
-                                    # Store the results for this recording in the group's dictionary
-                                    #recording_results[group_name][recording_name] = {
-                                    #    "rms_values": rms_values,
-                                    #    "iqr": iqr,
-                                    #    "good_channels": good_channels,
-                                    #    "noisy_channels": noisy_channels,
-                                    #}
-                                    
-                                    # Adding print statements to log the identified good and noisy channels
-                                    #print(f"Good channels: {good_channels}")
-                                    #print(f"Noisy channels: {noisy_channels}")
-                                    
-                                    # Call the common_average_reference method with necessary inputs
-                                    #self.common_average_reference(reshaped_data, good_channels)
+                                    # Process the downsampled data to compute RMS and other metrics
+                                    recording_results[group_name][recording_name] = self.process_downsampled_data(output_file_path)
                                     
                                     print(f"Processed recording {recording_index + 1}/{total_recordings_in_group} in group {group_index + 1}/{total_groups}")
                         else:
                             print(f"No SUA directory found in {recording_path}")  # For testing purposes
             group_index += 1  # Increment the group index counter here
         
-        # Return the recording results dictionary
-        # return recording_results
-	      
+        # Return the recording results dictionary: the keys are group names, the values are dictionaries of recording names and results
+        return recording_results
+        
+    def process_downsampled_data(self, downsampled_file_path):
+        """
+        Process the downsampled data to compute RMS values and identify good and noisy channels.
+
+        Parameters:
+        - downsampled_file_path: str, the path to the downsampled data file
+        """
+        
+        # Step 1: Load the downsampled data
+        downsampled_data = np.load(downsampled_file_path)
+        
+        # Step 2: Compute the RMS value for each channel
+        rms_values = np.sqrt(np.mean(np.square(downsampled_data), axis=0))
+        
+        # Step 3: Identify the 1st and 3rd quartiles of the RMS values
+        q1 = np.percentile(rms_values, 25)
+        q3 = np.percentile(rms_values, 75)
+        iqr = q3 - q1
+        
+        # Step 4: Mark channels as excessively noisy
+        lower_bound = q1 - 3 * iqr
+        upper_bound = q3 + 3 * iqr
+        noisy_channels = np.where((rms_values < lower_bound) | (rms_values > upper_bound))[0]
+        good_channels = np.setdiff1d(np.arange(self.n_channels), noisy_channels)
+        
+        # Store the results in a dictionary
+        recording_results = {
+            "rms_values": rms_values,
+            "iqr": iqr,
+            "good_channels": good_channels,
+            "noisy_channels": noisy_channels,
+        }
+        
+        # Print the identified good and noisy channels
+        print(f"Good channels: {good_channels}")
+        print(f"Noisy channels: {noisy_channels}")
+
+        # You can return the results to use them later
+        return recording_results
+
 		                    
     #def read_dat_file(self):
         # code to read the .dat file and set self.data
