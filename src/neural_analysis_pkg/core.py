@@ -92,6 +92,7 @@ class NeuralAnalysis:
                                     # Initialize an empty array to store the downsampled data
                                     downsampled_data = np.empty((expected_length, self.n_channels))
 
+                                    start_time = time() # Start the timer here
                                     # Loop through each channel to downsample the data
                                     for channel_idx in range(self.n_channels):
                                         print(f"Processing channel {channel_idx + 1}/{self.n_channels}")
@@ -113,41 +114,41 @@ class NeuralAnalysis:
 
                                     # Step 2.1: Save the downsampled data to a file
                                     output_file_path = os.path.join(recording_path, f"{file_name.split('.')[0]}_downsampled.npy")
-                                    start_time = time()
+                                    
                                     np.save(output_file_path, downsampled_data)
-                                    end_time = time()
+                                    end_time = time() # Stop the timer here
                                     print(f"Downsampled data saved to {output_file_path} in {end_time - start_time:.2f} seconds")
 
                                     # Step 3: Compute the RMS value for each channel
-                                    rms_values = np.sqrt(np.mean(np.square(downsampled_data), axis=0))
+                                    #rms_values = np.sqrt(np.mean(np.square(downsampled_data), axis=0))
                                     
                                     # Step 4: Identify the 1st and 3rd quartiles of the RMS values
-                                    q1 = np.percentile(rms_values, 25)
-                                    q3 = np.percentile(rms_values, 75)
-                                    iqr = q3 - q1
+                                    #q1 = np.percentile(rms_values, 25)
+                                    #q3 = np.percentile(rms_values, 75)
+                                    #iqr = q3 - q1
                                     
                                     # Step 5: Mark channels as excessively noisy
-                                    lower_bound = q1 - 3 * iqr
-                                    upper_bound = q3 + 3 * iqr
+                                    #lower_bound = q1 - 3 * iqr
+                                    #upper_bound = q3 + 3 * iqr
                                     
-                                    noisy_channels = np.where((rms_values < lower_bound) | (rms_values > upper_bound))[0]
-                                    good_channels = np.setdiff1d(np.arange(self.n_channels), noisy_channels)
+                                    #noisy_channels = np.where((rms_values < lower_bound) | (rms_values > upper_bound))[0]
+                                    #good_channels = np.setdiff1d(np.arange(self.n_channels), noisy_channels)
 
                                     
                                     # Store the results for this recording in the group's dictionary
-                                    recording_results[group_name][recording_name] = {
-                                        "rms_values": rms_values,
-                                        "iqr": iqr,
-                                        "good_channels": good_channels,
-                                        "noisy_channels": noisy_channels,
-                                    }
+                                    #recording_results[group_name][recording_name] = {
+                                    #    "rms_values": rms_values,
+                                    #    "iqr": iqr,
+                                    #    "good_channels": good_channels,
+                                    #    "noisy_channels": noisy_channels,
+                                    #}
                                     
                                     # Adding print statements to log the identified good and noisy channels
-                                    print(f"Good channels: {good_channels}")
-                                    print(f"Noisy channels: {noisy_channels}")
+                                    #print(f"Good channels: {good_channels}")
+                                    #print(f"Noisy channels: {noisy_channels}")
                                     
                                     # Call the common_average_reference method with necessary inputs
-                                    self.common_average_reference(reshaped_data, good_channels)
+                                    #self.common_average_reference(reshaped_data, good_channels)
                                     
                                     print(f"Processed recording {recording_index + 1}/{total_recordings_in_group} in group {group_index + 1}/{total_groups}")
                         else:
@@ -155,7 +156,7 @@ class NeuralAnalysis:
             group_index += 1  # Increment the group index counter here
         
         # Return the recording results dictionary
-        return recording_results
+        # return recording_results
 	      
 		                    
     #def read_dat_file(self):
