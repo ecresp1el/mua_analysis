@@ -95,6 +95,10 @@ class NeuralAnalysis:
                                     downsampled_data = np.empty((expected_length, self.n_channels))
 
                                     start_time = time() # Start the timer here
+                                    
+                                    # Before starting the channel processing loop, define output_file_path
+                                    output_file_path = os.path.join(recording_path, f"{file_name.split('.')[0]}_downsampled.npy")
+                                    
                                     # Loop through each channel to downsample the data
                                     for channel_idx in range(self.n_channels):
                                         print(f"Processing channel {channel_idx + 1}/{self.n_channels}")
@@ -129,10 +133,7 @@ class NeuralAnalysis:
                                     
                                     print(f"Downsampled data saved to {output_file_path} in {int(minutes)} minutes and {seconds:.2f} seconds")
                                     
-                                    # After saving the downsampled data, create a new file path for the downsampled data
-                                    output_file_path = os.path.join(sua_path, f"{file_name.split('.')[0]}_downsampled.npy")
-                                    
-                                    recording_metrics = self.process_downsampled_data(sua_path, file_name)
+                                    recording_metrics = self.process_downsampled_data(output_file_path)
 
                                     
                                     recording_info = {
@@ -146,9 +147,6 @@ class NeuralAnalysis:
                                     }
 
                                     recording_results.append(recording_info)
-                    
-                                    # Process the downsampled data to compute RMS and other metrics
-                                    recording_results[group_name][recording_name] = self.process_downsampled_data(output_file_path)
                                     
                                     print(f"Processed recording {recording_index + 1}/{total_recordings_in_group} in group {group_index + 1}/{total_groups}")
                         else:
