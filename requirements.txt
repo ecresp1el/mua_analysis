@@ -1,0 +1,39 @@
+# This file may be used to create an environment using:
+# $ conda create --name <env> --file <this file>
+# platform: osx-64
+appdirs=1.4.4=pyhd3eb1b0_0
+blas=1.0=openblas
+brotlipy=0.7.0=py38h9ed2024_1003
+ca-certificates=2023.08.22=hecd8cb5_0
+certifi=2023.7.22=py38hecd8cb5_0
+cffi=1.15.1=py38h6c40b1e_3
+charset-normalizer=2.0.4=pyhd3eb1b0_0
+cryptography=41.0.3=py38h30e54ef_0
+idna=3.4=py38hecd8cb5_0
+libcxx=14.0.6=h9765a3e_0
+libffi=3.4.4=hecd8cb5_0
+libgfortran=5.0.0=11_3_0_hecd8cb5_28
+libgfortran5=11.3.0=h9dfd629_28
+libopenblas=0.3.21=h54e7dc3_0
+llvm-openmp=14.0.6=h0dcd299_0
+ncurses=6.4=hcec6c5f_0
+numpy=1.24.3=py38h57a7bef_0
+numpy-base=1.24.3=py38hc93c6d9_0
+openssl=3.0.10=hca72f7f_2
+packaging=23.1=py38hecd8cb5_0
+pip=23.2.1=py38hecd8cb5_0
+pooch=1.4.0=pyhd3eb1b0_0
+pycparser=2.21=pyhd3eb1b0_0
+pyopenssl=23.2.0=py38hecd8cb5_0
+pysocks=1.7.1=py38_1
+python=3.8.18=h5ee71fb_0
+readline=8.2=hca72f7f_0
+requests=2.31.0=py38hecd8cb5_0
+scipy=1.10.1=py38h9034365_1
+setuptools=68.0.0=py38hecd8cb5_0
+sqlite=3.41.2=h6c40b1e_0
+tk=8.6.12=h5d9f67b_0
+urllib3=1.26.16=py38hecd8cb5_0
+wheel=0.38.4=py38hecd8cb5_0
+xz=5.4.2=h6c40b1e_0
+zlib=1.2.13=h4dc903c_0

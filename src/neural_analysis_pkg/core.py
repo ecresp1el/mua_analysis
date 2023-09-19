@@ -3,6 +3,9 @@ from scipy.signal import butter, filtfilt, gaussian, convolve
 import numpy as np
 
 class NeuralAnalysis:
+    """ 
+    Initializes new objects created from the NeuralAnalysis class. It is at the class level within your core.py file.
+    """
     def __init__(self, file_path, n_channels=32, sampling_rate=30000, dtype=np.int16):
         self.file_path = file_path
         self.n_channels = n_channels
