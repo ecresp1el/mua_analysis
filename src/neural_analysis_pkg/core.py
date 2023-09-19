@@ -205,7 +205,7 @@ class NeuralAnalysis:
         del downsampled_data # Clear the large variables to free up memory
         gc.collect() # Call the garbage collector to free up memory
         
-        return recording_results
+        return recording_results 
 
 		                    
     #def read_dat_file(self):
