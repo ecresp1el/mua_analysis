@@ -96,9 +96,9 @@ class NeuralAnalysis:
                                             good_channels = np.setdiff1d(np.arange(self.n_channels), noisy_channels)
 
                                             print(f"Processing recording {recording_index + 1}/{total_recordings_in_group} in group {group_index + 1}/{total_groups}")
-                        else:
-                            print(f"No SUA directory found in {recording_path}")  # For testing purposes
-            group_index += 1  # Increment the group index counter here
+                            else:
+                                print(f"No SUA directory found in {recording_path}")  # For testing purposes
+                group_index += 1  # Increment the group index counter here
 	      
 		                    
     #def read_dat_file(self):
