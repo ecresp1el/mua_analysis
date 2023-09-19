@@ -175,7 +175,7 @@ class NeuralAnalysis:
         downsampled_data = np.load(downsampled_file_path)
         
         # Step 2: Compute the RMS value for each channel
-        rms_values = np.sqrt(np.mean(np.square(downsampled_data), axis=0))
+        rms_values = np.sqrt(np.mean(np.square(downsampled_data), axis=0)) #rows are time points, columns are channels, so axis=0 is the channels
         
         # Step 3: Identify the 1st and 3rd quartiles of the RMS values
         q1 = np.percentile(rms_values, 25)
