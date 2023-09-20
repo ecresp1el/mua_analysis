@@ -27,7 +27,8 @@ class NeuralAnalysis:
         """
         Private method to load the recording results dataframe from an existing CSV file.
         """
-        csv_file_path = os.path.join(os.path.dirname(self.file_path), "SpikeStuff", "recording_results.csv")
+        csv_file_path = os.path.join(self.file_path, "SpikeStuff", "recording_results.csv")
+
         
         if os.path.exists(csv_file_path):
             recording_results_df = pd.read_csv(csv_file_path)
