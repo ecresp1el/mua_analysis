@@ -391,7 +391,7 @@ class NeuralAnalysis:
 
         # Return the updated DataFrame
         return self.recording_results_df
-
+    
     def extract_stimulation_data(self):
         # List to store individual dataframes for each recording
         df_list = []
@@ -411,25 +411,19 @@ class NeuralAnalysis:
             # Load the .mat file with scipy.io.loadmat
             mat_data = loadmat(mat_file_path)
             
-            # Extract the onset, offset, and stimulation ID data
-            # Note: replace 'onset', 'offset', 'stim_id' with the actual variable names in the .mat file
-            onset_times = mat_data['onset']
-            offset_times = mat_data['offset']
-            stimulation_ids = mat_data['stim_id']
+            # Access the data using the 'timestamp_s' key and create a DataFrame
+            timestamp_data = mat_data['timestamp_s']
+            df = pd.DataFrame(timestamp_data, columns=['onset_times', 'offset_times', 'stimulation_ids'])
             
-            # Creating a temporary DataFrame for the current recording
-            temp_df = pd.DataFrame({
-                'group_name': row['group_name'],
-                'recording_name': row['recording_name'],
-                'onset_times': onset_times,
-                'offset_times': offset_times,
-                'stimulation_ids': stimulation_ids,
-            })
+            # Add group_name and recording_name columns
+            df['group_name'] = row['group_name']
+            df['recording_name'] = row['recording_name']
             
-            # Append the temporary DataFrame to the list
-            df_list.append(temp_df)
+            # Append the DataFrame to the list
+            df_list.append(df)
         
         # Concatenate all individual dataframes to create a single DataFrame
         self.stimulation_data_df = pd.concat(df_list, ignore_index=True)
+
 
 
