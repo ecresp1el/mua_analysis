@@ -303,22 +303,14 @@ class NeuralAnalysis:
             # Step 1: CAR Re-Referencing in place (subtract the mean across channels from each channel)
             car_reference = np.mean(downsampled_data[:, row['good_channels']], axis=1, keepdims=True)
             downsampled_data -= car_reference
-
             
-            del downsampled_data # Clear the large variables to free up memory
-            gc.collect() # Call the garbage collector to free up memory
+            # After the CAR re-referencing step
+            downsampled_data[:, row['noisy_channels']] = np.nan
 
-            # Handle bad channels by setting them to np.nan
-            referenced_data[:, row['noisy_channels']] = np.nan
-            
             # Step 2: Bandpass Filtering for MUA Isolation
             for ch_idx in row['good_channels']:
-                # Apply the filters sequentially to achieve a bandpass effect
-                filtered_data_high = filtfilt(b_high, a_high, referenced_data[:, ch_idx]) # Highpass filter
-                referenced_data[:, ch_idx] = filtfilt(b_low, a_low, filtered_data_high) # Lowpass filter on the highpass filtered data
-                
-                del filtered_data_high # Clear the large variables to free up memory
-                gc.collect() # Call the garbage collector to free up memory
+                downsampled_data[:, ch_idx] = filtfilt(b_high, a_high, downsampled_data[:, ch_idx])
+                downsampled_data[:, ch_idx] = filtfilt(b_low, a_low, downsampled_data[:, ch_idx])
 
             # Step 3: Save the Processed Data
             # Define the output file path and save the downsampled MUA data
