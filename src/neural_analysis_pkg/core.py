@@ -281,6 +281,9 @@ class NeuralAnalysis:
         - bandpass_high: int, the higher frequency for the bandpass filter (default: 5000 Hz)
         - order: int, the order of the Butterworth filter (default: 3)
         """
+        
+        total_recordings = len(self.recording_results_df) #the number of rows in the DataFrame which is the number of recordings used for printing progress
+        
         # Define the bandpass filter using butter
         nyq = 0.5 * (self.sampling_rate / 3)  # Nyquist frequency based on the downsampled rate. Original sampling rate is 30kHz, so we divide by 3 to get the downsampled rate, then divide by 2 to get the Nyquist frequency
         bandpass_high = 4999  # A value safely below the Nyquist frequency to avoid aliasing
@@ -296,6 +299,9 @@ class NeuralAnalysis:
 
         # Loop through each recording in the DataFrame
         for idx, row in self.recording_results_df.iterrows():
+            
+            print(f"Processing recording {idx+1}/{total_recordings}...")
+            
             # Load the downsampled data from the path in the current row
             downsampled_data = np.load(row['downsampled_path'])
             
@@ -317,6 +323,8 @@ class NeuralAnalysis:
             output_file_path = os.path.join(os.path.dirname(row['downsampled_path']), f"{os.path.basename(row['downsampled_path']).replace('_downsampled', '_MUA')}")
             
             np.save(output_file_path, downsampled_data)
+            
+            print(f"Recording {idx+1}/{total_recordings} processed and MUA data saved at {output_file_path}")
             
             del downsampled_data # Clear the large variables to free up memory
             gc.collect() # Call the garbage collector to free up memory
