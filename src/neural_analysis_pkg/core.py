@@ -282,15 +282,13 @@ class NeuralAnalysis:
         - order: int, the order of the Butterworth filter (default: 3)
         """
         # Define the bandpass filter using butter
-        nyq = 0.5 * (self.sampling_rate / 3)  # Nyquist frequency based on the downsampled rate
-        bandpass_high = 4999  # A value safely below the Nyquist frequency
-        low = bandpass_low / nyq
-        high = bandpass_high / nyq
-
-        
+        nyq = 0.5 * (self.sampling_rate / 3)  # Nyquist frequency based on the downsampled rate. Original sampling rate is 30kHz, so we divide by 3 to get the downsampled rate, then divide by 2 to get the Nyquist frequency
+        bandpass_high = 4999  # A value safely below the Nyquist frequency to avoid aliasing
+        low = bandpass_low / nyq # Normalize the cutoff frequencies to the Nyquist frequency
+        high = bandpass_high / nyq # Normalize the cutoff frequencies to the Nyquist frequency
 
         # Define highpass and lowpass filters separately
-        b_high, a_high = butter(order, low, btype='high')
+        b_high, a_high = butter(order, low, btype='high') #
         b_low, a_low = butter(order, high, btype='low')
         
         # New column to store the paths of the downsampled MUA activity files
@@ -316,6 +314,9 @@ class NeuralAnalysis:
                 # Apply the filters sequentially to achieve a bandpass effect
                 filtered_data_high = filtfilt(b_high, a_high, referenced_data[:, ch_idx]) # Highpass filter
                 referenced_data[:, ch_idx] = filtfilt(b_low, a_low, filtered_data_high) # Lowpass filter on the highpass filtered data
+                
+                del filtered_data_high # Clear the large variables to free up memory
+                gc.collect() # Call the garbage collector to free up memory
 
             # Step 3: Save the Processed Data
             # Define the output file path and save the downsampled MUA data
