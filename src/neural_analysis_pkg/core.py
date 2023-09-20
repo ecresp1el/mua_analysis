@@ -430,6 +430,38 @@ class NeuralAnalysis:
         
         # Concatenate all individual dataframes to create a single DataFrame
         self.stimulation_data_df = pd.concat(df_list, ignore_index=True)
+        
+    def extract_spike_times(self):
+        """
+        Extracts spike times from the MUA data and saves them in structured arrays.
+        """
 
+        # Iterating through each recording
+        for idx, row in self.recording_results_df.iterrows():
+            # Load the MUA data
+            mua_data_path = row['mua_data_path']
+            mua_data = np.load(mua_data_path)
+            
+            # Estimate the noise standard deviation
+            noise_std_estimate = np.median(np.abs(mua_data), axis=0) / 0.6745
+            
+            # Find spikes: data points less than -3 times the noise standard deviation
+            spike_indices = np.where(mua_data < -3 * noise_std_estimate)
+            
+            # Convert spike indices to times (in seconds) based on the downsampled rate (10 kHz)
+            spike_times = spike_indices[0] / 10000
+            spike_channels = spike_indices[1]
 
+            # Create a structured array to store the spike times and channels
+            spike_data = np.zeros(spike_times.shape[0], dtype=[('time', 'f8'), ('channel', 'i4')])
+            spike_data['time'] = spike_times
+            spike_data['channel'] = spike_channels
 
+            # Define the output file path and save the spike data
+            output_file_path = os.path.join(os.path.dirname(mua_data_path), f"{os.path.basename(mua_data_path).replace('_MUA.npy', '_spike_times.npy')}")
+            np.save(output_file_path, spike_data)
+
+            # Print a message to indicate progress
+            print(f"Processed and saved spike times for recording {idx+1}/{len(self.recording_results_df)}")
+
+        print("Spike time extraction completed.")
