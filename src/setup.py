@@ -19,6 +19,7 @@ setup(
     install_requires=[
         "numpy>=1.24.3",
         "scipy>=1.10.1",
+        "ipykernel",
     ],
     python_requires='>=3.8.18',
 )
