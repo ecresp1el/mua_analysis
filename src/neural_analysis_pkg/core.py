@@ -188,9 +188,10 @@ class NeuralAnalysis:
         recording_results_flat = []
         for group_name, group_data in recording_results.items():
             for recording_name, recording_data in group_data.items():
+                recording_data['group_name'] = group_name
+                recording_data['recording_name'] = recording_name
                 recording_results_flat.append(recording_data)
         self.recording_results_df = pd.DataFrame(recording_results_flat)
-                        
         self.recording_results_df.to_csv(os.path.join(spikestuff_path, 'recording_results.csv'), index=False)
         
         # Return the recording results dictionary: the keys are group names, the values are dictionaries of recording names and results
