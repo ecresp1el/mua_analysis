@@ -344,53 +344,6 @@ class NeuralAnalysis:
         # Return the updated DataFrame
         return self.recording_results_df  
     
-    def detect_spikes(self):
-        
-        # Define the time step based on the downsampled sampling rate
-        time_step = 0.0001  # Corresponding to a 10kHz sampling rate
-        
-        # New column to store the paths of the spike data files
-        spike_data_paths = []
-
-        # Loop through each recording in the DataFrame
-        for idx, row in self.recording_results_df.iterrows():
-            # Load the MUA data from the path in the current row
-            mua_data = np.load(row['mua_data_path'])
-
-            # Initialize a list to store the spike data for this recording
-            recording_spike_data = []
-
-            # Loop through each channel in the MUA data
-            for ch_idx in range(mua_data.shape[1]):
-                # Estimate the standard deviation of the signal on this channel
-                median = np.median(mua_data[:, ch_idx])
-                std_est = np.median(np.abs(mua_data[:, ch_idx] - median)) / 0.6745
-
-                # Identify spikes as data points less than -3 times the estimated standard deviation
-                spike_times = np.where(mua_data[:, ch_idx] < -3 * std_est)[0]
-                spike_times_in_s = spike_times * time_step  # Convert indices to times in seconds
-
-                # (Optional) Extract the spike waveforms
-
-                # Store the spike data for this channel
-                channel_spike_data = {
-                    'times': spike_times_in_s,
-                    # (Optional) 'waveforms': spike_waveforms,
-                }
-                recording_spike_data.append(channel_spike_data)
-
-            # Save the spike data for this recording
-            output_file_path = os.path.join(os.path.dirname(row['mua_data_path']), f"{os.path.basename(row['mua_data_path']).replace('_MUA', '_spikes')}.npz")
-            np.savez(output_file_path, recording_spike_data)
-
-            # Append the new path to the spike_data_paths list
-            spike_data_paths.append(output_file_path)
-
-        # Update the DataFrame with the new column
-        self.recording_results_df['spike_data_path'] = spike_data_paths
-
-        # Return the updated DataFrame
-        return self.recording_results_df
     
     def extract_stimulation_data(self):
         # List to store individual dataframes for each recording
@@ -461,7 +414,6 @@ class NeuralAnalysis:
             output_file_path = os.path.join(os.path.dirname(mua_data_path), f"{os.path.basename(mua_data_path).replace('_MUA.npy', '_spike_times.npy')}")
             np.save(output_file_path, spike_data)
             print(type(spike_data))  # Add this line to check the type of spike_data
-            np.save(output_file_path, spike_data)
 
             # Print a message to indicate progress
             print(f"Processed and saved spike times for recording {idx+1}/{len(self.recording_results_df)}")
