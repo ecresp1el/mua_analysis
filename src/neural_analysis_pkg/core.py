@@ -419,6 +419,12 @@ class NeuralAnalysis:
             df['group_name'] = row['group_name']
             df['recording_name'] = row['recording_name']
             
+            # Convert 'stimulation_ids' to integers
+            df['stimulation_ids'] = df['stimulation_ids'].astype(int)
+            
+            # Remove rows with negative 'onset_times' and 'offset_times'
+            df = df[(df['onset_times'] >= 0) & (df['offset_times'] >= 0)]
+                
             # Append the DataFrame to the list
             df_list.append(df)
         
