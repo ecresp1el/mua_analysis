@@ -6,4 +6,6 @@ dependencies:
   - numpy
   - scipy
   - pandas
+  - ipykernel
+  - jupyterlab
 
