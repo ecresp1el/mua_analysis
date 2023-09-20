@@ -1,10 +1,10 @@
 import os
-from scipy.signal import butter, filtfilt, gaussian, convolve, resample_poly
+from scipy.signal import butter, filtfilt, gaussian, convolve, resample_poly, loadmat
 import numpy as np
 from time import time 
 import gc 
 import pandas as pd 
-import mat73
+
 
 
 class NeuralAnalysis:
@@ -407,8 +407,8 @@ class NeuralAnalysis:
                 'timestamp_s.mat'
             )
             
-            # Load the .mat file using mat73
-            mat_data = mat73.loadmat(mat_file_path)
+            # Load the .mat file with scipy.io.loadmat
+            mat_data = loadmat(mat_file_path)
             
             # Extract the onset, offset, and stimulation ID data
             # Note: replace 'onset', 'offset', 'stim_id' with the actual variable names in the .mat file
