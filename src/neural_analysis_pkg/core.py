@@ -282,10 +282,9 @@ class NeuralAnalysis:
         - order: int, the order of the Butterworth filter (default: 3)
         """
         # Define the bandpass filter using butter
-        nyq = self.sampling_rate / 6
+        nyq = 0.5 * 10000  # Nyquist frequency after downsampling the data to 10 kHz in the previous step
         low = bandpass_low / nyq
         high = bandpass_high / nyq
-
 
         # Define highpass and lowpass filters separately
         b_high, a_high = butter(order, low, btype='high')
