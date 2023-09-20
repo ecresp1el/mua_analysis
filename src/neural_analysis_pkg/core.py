@@ -302,7 +302,7 @@ class NeuralAnalysis:
 
             # Step 1: CAR Re-Referencing in place (subtract the mean across channels from each channel)
             car_reference = np.mean(downsampled_data[:, row['good_channels']], axis=1, keepdims=True)
-            downsampled_data -= car_reference
+            downsampled_data -= car_reference #this is in place, so it modifies the downsampled_data array directly to get the CAR-referenced data to save memory
             
             # After the CAR re-referencing step
             downsampled_data[:, row['noisy_channels']] = np.nan
@@ -316,9 +316,9 @@ class NeuralAnalysis:
             # Define the output file path and save the downsampled MUA data
             output_file_path = os.path.join(os.path.dirname(row['downsampled_path']), 'MUA_Data', f"{os.path.basename(row['downsampled_path']).replace('_downsampled', '_MUA')}")
             os.makedirs(os.path.dirname(output_file_path), exist_ok=True)  # Create the MUA_Data folder if it doesn't exist
-            np.save(output_file_path, referenced_data)
+            np.save(output_file_path, downsampled_data)
             
-            del referenced_data # Clear the large variables to free up memory
+            del downsampled_data # Clear the large variables to free up memory
             gc.collect() # Call the garbage collector to free up memory
             
             # Append the new path to the mua_paths list
