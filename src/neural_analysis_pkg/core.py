@@ -315,6 +315,8 @@ class NeuralAnalysis:
 
             # Step 2: Bandpass Filtering for MUA Isolation
             for ch_idx in row['good_channels']:
+                #print the channel index to check progress 
+                print(f"Processing channel {ch_idx + 1}/{self.n_channels}")
                 downsampled_data[:, ch_idx] = filtfilt(b_high, a_high, downsampled_data[:, ch_idx])
                 downsampled_data[:, ch_idx] = filtfilt(b_low, a_low, downsampled_data[:, ch_idx])
 
