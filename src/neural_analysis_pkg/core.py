@@ -460,6 +460,8 @@ class NeuralAnalysis:
             # Define the output file path and save the spike data
             output_file_path = os.path.join(os.path.dirname(mua_data_path), f"{os.path.basename(mua_data_path).replace('_MUA.npy', '_spike_times.npy')}")
             np.save(output_file_path, spike_data)
+            print(type(spike_data))  # Add this line to check the type of spike_data
+            np.save(output_file_path, spike_data)
 
             # Print a message to indicate progress
             print(f"Processed and saved spike times for recording {idx+1}/{len(self.recording_results_df)}")
