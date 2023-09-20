@@ -1,4 +1,10 @@
 from setuptools import setup, find_packages
+import subprocess
+import os
+
+# Run the setup_kernel.py script to set up the Jupyter kernel
+kernel_script_path = os.path.join(os.path.dirname(__file__), "setup_kernel.py")
+subprocess.run(["python", kernel_script_path])
 
 setup(
     name="neural_analysis_pkg",
@@ -23,4 +29,5 @@ setup(
     ],
     python_requires='>=3.8.18',
 )
+
 
