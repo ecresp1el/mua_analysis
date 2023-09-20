@@ -285,7 +285,10 @@ class NeuralAnalysis:
         nyq = 0.5 * self.sampling_rate / 3 # Adjusted for the downsampled data
         low = bandpass_low / nyq
         high = bandpass_high / nyq
-        b, a = butter(order, [low, high], btype='band')
+
+        # Define highpass and lowpass filters separately
+        b_high, a_high = butter(order, low, btype='high')
+        b_low, a_low = butter(order, high, btype='low')
         
         # New column to store the paths of the downsampled MUA activity files
         mua_paths = []
@@ -301,14 +304,15 @@ class NeuralAnalysis:
             
             del downsampled_data # Clear the large variables to free up memory
             gc.collect() # Call the garbage collector to free up memory
-            
 
             # Handle bad channels by setting them to np.nan
             referenced_data[:, row['noisy_channels']] = np.nan
             
             # Step 2: Bandpass Filtering for MUA Isolation
             for ch_idx in row['good_channels']:
-                referenced_data[:, ch_idx] = filtfilt(b, a, referenced_data[:, ch_idx])
+                # Apply the filters sequentially to achieve a bandpass effect
+                filtered_data_high = filtfilt(b_high, a_high, referenced_data[:, ch_idx]) # Highpass filter
+                referenced_data[:, ch_idx] = filtfilt(b_low, a_low, filtered_data_high) # Lowpass filter on the highpass filtered data
 
             # Step 3: Save the Processed Data
             # Define the output file path and save the downsampled MUA data
@@ -318,7 +322,6 @@ class NeuralAnalysis:
             
             del referenced_data # Clear the large variables to free up memory
             gc.collect() # Call the garbage collector to free up memory
-            
             
             # Append the new path to the mua_paths list
             mua_paths.append(output_file_path)
