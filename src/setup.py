@@ -3,7 +3,8 @@ import subprocess
 import os
 
 # Run the setup_kernel.py script to set up the Jupyter kernel
-kernel_script_path = os.path.join(os.path.dirname(__file__), "setup_kernel.py")
+kernel_script_path = os.path.join(os.path.dirname(__file__), "../scripts/setup_kernel.py")
+
 subprocess.run(["python", kernel_script_path])
 
 setup(

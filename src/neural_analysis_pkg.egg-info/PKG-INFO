@@ -1,0 +1,15 @@
+Metadata-Version: 2.1
+Name: neural-analysis-pkg
+Version: 0.1.0
+Summary: A package for neural analysis based on extracellular recordings
+Home-page: https://github.com/ecresp1el/mua_analysis
+Author: Emmanuel Crespo
+Author-email: cresp1el@cmich.edu
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.8.18
+Description-Content-Type: text/markdown

@@ -22,6 +22,8 @@ if __name__ == "__main__":
     env_name = os.environ.get('CONDA_DEFAULT_ENV')
     if env_name:
         install_kernel(env_name, f"Python ({env_name})")
+        # print the name of the environment that was used to install the kernel
+        print(f"Installed kernel for {env_name}")
     else:
         print("No conda environment is activated.")
         
