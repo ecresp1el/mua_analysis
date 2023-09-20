@@ -106,7 +106,11 @@ class NeuralAnalysis:
                                     #check if the downsampled file already exists
                                     if os.path.exists(output_file_path):
                                         print(f"Downsampled file already exists at {output_file_path} ...skipping downsampling and recalculating RMS") #if the file already exists, skip the downsampling step
-                                        
+                                        # Clear the large variables to free up memory
+                                        del downsampled_data
+                                        del data
+                                        del reshaped_data
+                                        gc.collect()  # Call the garbage collector to free up memory
                                         
                                         
                                         
