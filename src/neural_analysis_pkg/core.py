@@ -314,8 +314,8 @@ class NeuralAnalysis:
 
             # Step 3: Save the Processed Data
             # Define the output file path and save the downsampled MUA data
-            output_file_path = os.path.join(os.path.dirname(row['downsampled_path']), 'MUA_Data', f"{os.path.basename(row['downsampled_path']).replace('_downsampled', '_MUA')}")
-            os.makedirs(os.path.dirname(output_file_path), exist_ok=True)  # Create the MUA_Data folder if it doesn't exist
+            output_file_path = os.path.join(os.path.dirname(row['downsampled_path']), f"{os.path.basename(row['downsampled_path']).replace('_downsampled', '_MUA')}")
+            
             np.save(output_file_path, downsampled_data)
             
             del downsampled_data # Clear the large variables to free up memory
