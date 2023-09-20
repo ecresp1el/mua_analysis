@@ -19,6 +19,27 @@ class NeuralAnalysis:
         self.good_channels = None
         self.noisy_channels = None
         
+        # Try to load the existing recording_results_df from a CSV file
+        self.recording_results_df = self._load_recording_results_df()
+        
+    def _load_recording_results_df(self):
+        """
+        Private method to load the recording results dataframe from an existing CSV file.
+        """
+        csv_file_path = os.path.join(os.path.dirname(self.file_path), "SpikeStuff", "recording_results.csv")
+        
+        if os.path.exists(csv_file_path):
+            recording_results_df = pd.read_csv(csv_file_path)
+            # Convert 'good_channels' and 'noisy_channels' from string representation to lists
+            recording_results_df['good_channels'] = recording_results_df['good_channels'].apply(eval)
+            recording_results_df['noisy_channels'] = recording_results_df['noisy_channels'].apply(eval)
+            recording_results_df['rms_values'] = recording_results_df['rms_values'].apply(eval)
+            print(f"Loaded existing recording results dataframe from {csv_file_path}")
+            return recording_results_df
+        else:
+            print("No existing recording results dataframe found. Run process_dat_file method to generate it.")
+            return None
+        
     def process_dat_file(self, project_folder_path):
         """
         Iteratively process .dat files in the project folder.
@@ -248,19 +269,60 @@ class NeuralAnalysis:
         gc.collect() # Call the garbage collector to free up memory
         
         return recording_results 
+    
+    def process_MUA(self, bandpass_low=500, bandpass_high=5000, order=3):
+        """
+        Process the re-referenced signals to isolate MUA and save the downsampled MUA activity.
 
-		                    
-    #def read_dat_file(self):
-        # code to read the .dat file and set self.data
+        Parameters:
+        - bandpass_low: int, the lower frequency for the bandpass filter (default: 500 Hz)
+        - bandpass_high: int, the higher frequency for the bandpass filter (default: 5000 Hz)
+        - order: int, the order of the Butterworth filter (default: 3)
+        """
+        # Define the bandpass filter using butter
+        nyq = 0.5 * self.sampling_rate / 3 # Adjusted for the downsampled data
+        low = bandpass_low / nyq
+        high = bandpass_high / nyq
+        b, a = butter(order, [low, high], btype='band')
+        
+        # New column to store the paths of the downsampled MUA activity files
+        mua_paths = []
 
-    #def process_dat_file(self):
-        # code to process the .dat file and set self.good_channels and self.noisy_channels
+        # Loop through each recording in the DataFrame
+        for idx, row in self.recording_results_df.iterrows():
+            # Load the downsampled data from the path in the current row
+            downsampled_data = np.load(row['downsampled_path'])
+            
+            # Step 1: CAR Re-Referencing
+            car_reference = np.mean(downsampled_data[:, row['good_channels']], axis=1)
+            referenced_data = downsampled_data - car_reference[:, np.newaxis]
+            
+            del downsampled_data # Clear the large variables to free up memory
+            gc.collect() # Call the garbage collector to free up memory
+            
 
-    #def common_average_reference(self):
-        # code to apply common average reference to self.data using self.good_channels
+            # Handle bad channels by setting them to np.nan
+            referenced_data[:, row['noisy_channels']] = np.nan
+            
+            # Step 2: Bandpass Filtering for MUA Isolation
+            for ch_idx in row['good_channels']:
+                referenced_data[:, ch_idx] = filtfilt(b, a, referenced_data[:, ch_idx])
 
-    #def isolate_MUA(self):
-        # code to isolate MUA from self.data
+            # Step 3: Save the Processed Data
+            # Define the output file path and save the downsampled MUA data
+            output_file_path = os.path.join(os.path.dirname(row['downsampled_path']), 'MUA_Data', f"{os.path.basename(row['downsampled_path']).replace('_downsampled', '_MUA')}")
+            os.makedirs(os.path.dirname(output_file_path), exist_ok=True)  # Create the MUA_Data folder if it doesn't exist
+            np.save(output_file_path, referenced_data)
+            
+            del referenced_data # Clear the large variables to free up memory
+            gc.collect() # Call the garbage collector to free up memory
+            
+            
+            # Append the new path to the mua_paths list
+            mua_paths.append(output_file_path)
+        
+        # Update the DataFrame with the new column
+        self.recording_results_df['mua_data_path'] = mua_paths
 
-    #def estimate_firing_rate(self):
-        # code to estimate firing rate from the data obtained in isolate_MUA
+        # Return the updated DataFrame
+        return self.recording_results_df
