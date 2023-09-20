@@ -304,6 +304,8 @@ class NeuralAnalysis:
             
             # Load the downsampled data from the path in the current row
             downsampled_data = np.load(row['downsampled_path'])
+            downsampled_data = downsampled_data.astype(np.float32)
+
             
 
             # Step 1: CAR Re-Referencing in place (subtract the mean across channels from each channel)
