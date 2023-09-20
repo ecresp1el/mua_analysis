@@ -1,0 +1,12 @@
+# Ignore Python build and distribution directories
+src/build/
+src/dist/
+*.egg-info/
+
+# Ignore Python compiled files
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore Jupyter notebook checkpoints
+.ipynb_checkpoints/
