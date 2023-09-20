@@ -1,5 +1,6 @@
 import os
-from scipy.signal import butter, filtfilt, gaussian, convolve, resample_poly, loadmat
+from scipy.signal import butter, filtfilt, gaussian, convolve, resample_poly
+from scipy.io import loadmat
 import numpy as np
 from time import time 
 import gc 
