@@ -53,7 +53,7 @@ class NeuralAnalysis:
                 recording_results[group_name] = {}
 
 
-                for recording_index, recording_name in enumerate(os.listdir(group_path)):
+                for recording_index, recording_name in enumerate(os.listdir(group_path)): #recording_index is the index of the recording in the group, recording_name is the name of the recording
                     recording_path = os.path.join(group_path, recording_name)
                     
                     # Ensure it's a directory and not a file
@@ -103,49 +103,58 @@ class NeuralAnalysis:
                                     # Before starting the channel processing loop, define output_file_path
                                     output_file_path = os.path.join(recording_path, f"{file_name.split('.')[0]}_downsampled.npy")
                                     
-                                    # Loop through each channel to downsample the data
-                                    for channel_idx in range(self.n_channels):
-                                        print(f"Processing channel {channel_idx + 1}/{self.n_channels}")
-
-                                        # Get the data for the current channel
-                                        channel_data = reshaped_data[:, channel_idx].astype(np.float32)
-
-
-                                        # Downsample the channel data using resample_poly
-                                        downsampled_channel_data = resample_poly(channel_data, up=1, down=downsample_factor)
+                                    #check if the downsampled file already exists
+                                    if os.path.exists(output_file_path):
+                                        print(f"Downsampled file already exists at {output_file_path} ...skipping downsampling and recalculating RMS") #if the file already exists, skip the downsampling step
                                         
-                                        print(f"Downsampled data min: {np.min(downsampled_channel_data)}, max: {np.max(downsampled_channel_data)}")
-
-                                        # If the downsampled data is slightly longer or shorter than the expected length, trim or pad it
-                                        if len(downsampled_channel_data) > expected_length:
-                                            downsampled_channel_data = downsampled_channel_data[:expected_length]
-                                        elif len(downsampled_channel_data) < expected_length:
-                                            downsampled_channel_data = np.pad(downsampled_channel_data, (0, expected_length - len(downsampled_channel_data)))
-
-                                        # Store the downsampled data in the appropriate column of the downsampled_data array
-                                        downsampled_data[:, channel_idx] = downsampled_channel_data #what is the precision at this point?
-                                    
-                                    # Print the min and max of the downsampled data after processing all the channels
-                                    print(f"Min and Max for all channels in a recording: {np.min(downsampled_data)} and {np.max(downsampled_data)}")
                                         
-                                    # Save the downsampled data to a .npy file
-                                    np.save(output_file_path, downsampled_data)
-                                    end_time = time() # Stop the timer here
+                                        
+                                        
+                                    if not os.path.exists(output_file_path):
+                                        print(f"Downsampled file does not exist at {output_file_path} ...proceeding with downsampling")
                                     
-                                    # Clear the large variables to free up memory
-                                    del downsampled_data
-                                    del data
-                                    del reshaped_data
-                                    gc.collect()  # Call the garbage collector to free up memory
-                                    
-                                    elapsed_time = end_time - start_time # Calculate the elapsed time
-                                    minutes, seconds = divmod(elapsed_time, 60) # Convert elapsed time to minutes and seconds
-                                    
-                                    print(f"Downsampled data saved to {output_file_path} in {int(minutes)} minutes and {seconds:.2f} seconds")
-                                    
+                                        # Loop through each channel to downsample the data
+                                        for channel_idx in range(self.n_channels):
+                                            print(f"Processing channel {channel_idx + 1}/{self.n_channels}")
+
+                                            # Get the data for the current channel
+                                            channel_data = reshaped_data[:, channel_idx].astype(np.float32)
+
+
+                                            # Downsample the channel data using resample_poly
+                                            downsampled_channel_data = resample_poly(channel_data, up=1, down=downsample_factor)
+                                            
+                                            print(f"Downsampled data min: {np.min(downsampled_channel_data)}, max: {np.max(downsampled_channel_data)}")
+
+                                            # If the downsampled data is slightly longer or shorter than the expected length, trim or pad it
+                                            if len(downsampled_channel_data) > expected_length:
+                                                downsampled_channel_data = downsampled_channel_data[:expected_length]
+                                            elif len(downsampled_channel_data) < expected_length:
+                                                downsampled_channel_data = np.pad(downsampled_channel_data, (0, expected_length - len(downsampled_channel_data)))
+
+                                            # Store the downsampled data in the appropriate column of the downsampled_data array
+                                            downsampled_data[:, channel_idx] = downsampled_channel_data #what is the precision at this point?
+                                        
+                                        # Print the min and max of the downsampled data after processing all the channels
+                                        print(f"Min and Max for all channels in a recording: {np.min(downsampled_data)} and {np.max(downsampled_data)}")
+                                            
+                                        # Save the downsampled data to a .npy file
+                                        np.save(output_file_path, downsampled_data)
+                                        end_time = time() # Stop the timer here
+                                        
+                                        # Clear the large variables to free up memory
+                                        del downsampled_data
+                                        del data
+                                        del reshaped_data
+                                        gc.collect()  # Call the garbage collector to free up memory
+                                        
+                                        elapsed_time = end_time - start_time # Calculate the elapsed time
+                                        minutes, seconds = divmod(elapsed_time, 60) # Convert elapsed time to minutes and seconds
+                                        
+                                        print(f"Downsampled data saved to {output_file_path} in {int(minutes)} minutes and {seconds:.2f} seconds")
+                                        
                                     recording_metrics = self.process_downsampled_data(output_file_path)
 
-                                    
                                     recording_info = {
                                         "group_name": group_name,
                                         "recording_name": recording_name,
