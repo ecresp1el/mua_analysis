@@ -19,6 +19,7 @@ class NeuralAnalysis:
         self.good_channels = None
         self.noisy_channels = None
         
+        
         # Try to load the existing recording_results_df from a CSV file
         self.recording_results_df = self._load_recording_results_df()
         
