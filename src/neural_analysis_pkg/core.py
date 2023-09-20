@@ -184,8 +184,13 @@ class NeuralAnalysis:
                         else:
                             print(f"No SUA directory found in {recording_path}")  # For testing purposes
             group_index += 1  # Increment the group index counter here
-            
-        self.recording_results_df = pd.DataFrame(recording_results)
+
+        recording_results_flat = []
+        for group_name, group_data in recording_results.items():
+            for recording_name, recording_data in group_data.items():
+                recording_results_flat.append(recording_data)
+        self.recording_results_df = pd.DataFrame(recording_results_flat)
+                        
         self.recording_results_df.to_csv(os.path.join(spikestuff_path, 'recording_results.csv'), index=False)
         
         # Return the recording results dictionary: the keys are group names, the values are dictionaries of recording names and results
