@@ -70,53 +70,62 @@ class NeuralAnalysis:
                                 if file_name.endswith(".dat"):
                                     dat_file_path = os.path.join(sua_path, file_name)
                                     
-                                    # Now, dat_file_path is the path to a .dat file
-                                    # Call your .dat file processing function here
-                                    
-                                    # Step 1: Read the .dat file
-                                    data = np.fromfile(dat_file_path, dtype=self.dtype)
-                                    #check the initial data loading 
-                                    print(f"Initial data min: {np.min(data)}, max: {np.max(data)}")
-                                    
-                                    # Step 1.1: Reshape the data to create a 2D array where each row is a channel and each column is a time point
-                                    reshaped_data = data.reshape((-1, self.n_channels))
-                                    #check data after reshaping
-                                    print(f"Reshaped data min: {np.min(reshaped_data)}, max: {np.max(reshaped_data)}")
-                                    
-                                    # Log the shape and data type of the loaded data
-                                    print(f"Data shape: {reshaped_data.shape}, Data type: {reshaped_data.dtype}")
-                                    
-                                    # Step 1.2: Calculate and print the full length of the recording in seconds
-                                    recording_length_in_seconds = reshaped_data.shape[0] / self.sampling_rate
-                                    print(f"The entire length of the recording is: {recording_length_in_seconds} seconds")
-
-                                    # Step 2: Downsample the data from 30kHz to 10kHz using resample_poly
-                                    # Calculate the expected length of the downsampled data
-                                    downsample_factor = 3
-                                    expected_length = int(np.ceil(reshaped_data.shape[0] / downsample_factor))
-
-                                    # Initialize an empty array to store the downsampled data
-                                    downsampled_data = np.empty((expected_length, self.n_channels))
-
-                                    start_time = time() # Start the timer here
-                                    
                                     # Before starting the channel processing loop, define output_file_path
                                     output_file_path = os.path.join(recording_path, f"{file_name.split('.')[0]}_downsampled.npy")
                                     
                                     #check if the downsampled file already exists
                                     if os.path.exists(output_file_path):
                                         print(f"Downsampled file already exists at {output_file_path} ...skipping downsampling and recalculating RMS") #if the file already exists, skip the downsampling step
-                                        # Clear the large variables to free up memory
-                                        del downsampled_data
-                                        del data
-                                        del reshaped_data
-                                        gc.collect()  # Call the garbage collector to free up memory
                                         
+                                        #proceed to calculate the RMS values
+                                        recording_metrics = self.process_downsampled_data(output_file_path)
+
+                                        recording_info = {
+                                            "group_name": group_name,
+                                            "recording_name": recording_name,
+                                            "downsampled_path": output_file_path,
+                                            "rms_values": recording_metrics['rms_values'], 
+                                            "iqr": recording_metrics['iqr'],
+                                            "good_channels": recording_metrics['good_channels'],
+                                            "noisy_channels": recording_metrics['noisy_channels']
+                                        }
                                         
+                                        recording_results[group_name][recording_name] = recording_info
+                                        
+                                        print(f"Processed RMS for recording {recording_index + 1}/{total_recordings_in_group} in group {group_index + 1}/{total_groups}")
                                         
                                     if not os.path.exists(output_file_path):
                                         print(f"Downsampled file does not exist at {output_file_path} ...proceeding with downsampling")
                                     
+                                        # Now, dat_file_path is the path to a .dat file
+                                        # Call your .dat file processing function here
+                                        # Step 1: Read the .dat file
+                                        data = np.fromfile(dat_file_path, dtype=self.dtype)
+                                        #check the initial data loading 
+                                        print(f"Initial data min: {np.min(data)}, max: {np.max(data)}")
+                                        
+                                        # Step 1.1: Reshape the data to create a 2D array where each row is a channel and each column is a time point
+                                        reshaped_data = data.reshape((-1, self.n_channels))
+                                        #check data after reshaping
+                                        print(f"Reshaped data min: {np.min(reshaped_data)}, max: {np.max(reshaped_data)}")
+                                        
+                                        # Log the shape and data type of the loaded data
+                                        print(f"Data shape: {reshaped_data.shape}, Data type: {reshaped_data.dtype}")
+                                        
+                                        # Step 1.2: Calculate and print the full length of the recording in seconds
+                                        recording_length_in_seconds = reshaped_data.shape[0] / self.sampling_rate
+                                        print(f"The entire length of the recording is: {recording_length_in_seconds} seconds")
+
+                                        # Step 2: Downsample the data from 30kHz to 10kHz using resample_poly
+                                        # Calculate the expected length of the downsampled data
+                                        downsample_factor = 3
+                                        expected_length = int(np.ceil(reshaped_data.shape[0] / downsample_factor))
+
+                                        # Initialize an empty array to store the downsampled data
+                                        downsampled_data = np.empty((expected_length, self.n_channels))
+
+                                        start_time = time() # Start the timer here
+                                            
                                         # Loop through each channel to downsample the data
                                         for channel_idx in range(self.n_channels):
                                             print(f"Processing channel {channel_idx + 1}/{self.n_channels}")
@@ -156,22 +165,22 @@ class NeuralAnalysis:
                                         minutes, seconds = divmod(elapsed_time, 60) # Convert elapsed time to minutes and seconds
                                         
                                         print(f"Downsampled data saved to {output_file_path} in {int(minutes)} minutes and {seconds:.2f} seconds")
-                                        
-                                    recording_metrics = self.process_downsampled_data(output_file_path)
+                                    
+                                        recording_metrics = self.process_downsampled_data(output_file_path)
 
-                                    recording_info = {
-                                        "group_name": group_name,
-                                        "recording_name": recording_name,
-                                        "downsampled_path": output_file_path,
-                                        "rms_values": recording_metrics['rms_values'], 
-                                        "iqr": recording_metrics['iqr'],
-                                        "good_channels": recording_metrics['good_channels'],
-                                        "noisy_channels": recording_metrics['noisy_channels']
-                                    }
-                                    
-                                    recording_results[group_name][recording_name] = recording_info
-                                    
-                                    print(f"Processed recording {recording_index + 1}/{total_recordings_in_group} in group {group_index + 1}/{total_groups}")
+                                        recording_info = {
+                                            "group_name": group_name,
+                                            "recording_name": recording_name,
+                                            "downsampled_path": output_file_path,
+                                            "rms_values": recording_metrics['rms_values'], 
+                                            "iqr": recording_metrics['iqr'],
+                                            "good_channels": recording_metrics['good_channels'],
+                                            "noisy_channels": recording_metrics['noisy_channels']
+                                        }
+                                        
+                                        recording_results[group_name][recording_name] = recording_info
+                                        
+                                        print(f"Processed recording {recording_index + 1}/{total_recordings_in_group} in group {group_index + 1}/{total_groups}")
                         else:
                             print(f"No SUA directory found in {recording_path}")  # For testing purposes
             group_index += 1  # Increment the group index counter here
