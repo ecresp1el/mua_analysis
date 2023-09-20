@@ -446,16 +446,16 @@ class NeuralAnalysis:
             noise_std_estimate = np.median(np.abs(mua_data), axis=0) / 0.6745
             
             # Find spikes: data points less than -3 times the noise standard deviation
-            spike_indices = np.where(mua_data < -3 * noise_std_estimate)
+            spike_indices = np.where(mua_data < -3 * noise_std_estimate) #returns a tuple of arrays, the first array is the time index, the second array is the channel index
             
             # Convert spike indices to times (in seconds) based on the downsampled rate (10 kHz)
-            spike_times = spike_indices[0] / 10000
-            spike_channels = spike_indices[1]
+            spike_times = spike_indices[0] / 10000 #the first index of spike_indices is the time index
+            spike_channels = spike_indices[1] #this is the channel index, not the channel number 
 
             # Create a structured array to store the spike times and channels
-            spike_data = np.zeros(spike_times.shape[0], dtype=[('time', 'f8'), ('channel', 'i4')])
-            spike_data['time'] = spike_times
-            spike_data['channel'] = spike_channels
+            spike_data = np.zeros(spike_times.shape[0], dtype=[('time', 'f8'), ('channel', 'i4')]) #the first column is the time, the second column is the channel
+            spike_data['time'] = spike_times #assign the spike times to the first column
+            spike_data['channel'] = spike_channels #assign the spike channels to the second column
 
             # Define the output file path and save the spike data
             output_file_path = os.path.join(os.path.dirname(mua_data_path), f"{os.path.basename(mua_data_path).replace('_MUA.npy', '_spike_times.npy')}")
