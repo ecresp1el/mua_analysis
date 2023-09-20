@@ -299,9 +299,11 @@ class NeuralAnalysis:
             # Load the downsampled data from the path in the current row
             downsampled_data = np.load(row['downsampled_path'])
             
-            # Step 1: CAR Re-Referencing
-            car_reference = np.mean(downsampled_data[:, row['good_channels']], axis=1)
-            referenced_data = downsampled_data - car_reference[:, np.newaxis]
+
+            # Step 1: CAR Re-Referencing in place (subtract the mean across channels from each channel)
+            car_reference = np.mean(downsampled_data[:, row['good_channels']], axis=1, keepdims=True)
+            downsampled_data -= car_reference
+
             
             del downsampled_data # Clear the large variables to free up memory
             gc.collect() # Call the garbage collector to free up memory
