@@ -282,7 +282,7 @@ class NeuralAnalysis:
         - order: int, the order of the Butterworth filter (default: 3)
         """
         # Define the bandpass filter using butter
-        nyq = 0.5 * (self.sampling_rate / 3)
+        nyq = 5000 # 10 khz / 2 = 5 khz
 
         low = bandpass_low / nyq
         high = bandpass_high / nyq
