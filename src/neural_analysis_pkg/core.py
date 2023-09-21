@@ -48,10 +48,30 @@ class NeuralAnalysis:
         """
         Iteratively process .dat files in the project folder.
 
-        Processes a .dat file to identify noisy channels based on RMS values.
+        This method processes .dat files within a given project folder. It identifies noisy channels based on root-mean-square (RMS) values, and 
+        performs downsampling. The method works on multiple groups and recordings, and results are saved as a DataFrame.
 
-        Parameters:
-        - project_folder_path: str, the path to the project folder containing all the group and recording folders
+        Parameters
+        ----------
+        project_folder_path : str
+            The absolute path to the project folder. This folder should contain all the group and recording folders.
+
+        Returns
+        -------
+        dict
+            A dictionary containing processed information from .dat files, keyed by group name and recording name.
+
+        Notes
+        -----
+        - The project folder should contain a "SpikeStuff" folder.
+        - Each group folder within "SpikeStuff" should contain individual recording folders.
+        - Each recording folder should have an 'SUA' sub-folder containing .dat files.
+        - The dtype, n_channels, and sampling_rate attributes should be initialized before calling this method.
+        
+        Examples
+        --------
+        >>> obj = YourClass(dtype=np.int16, n_channels=32, sampling_rate=30000)
+        >>> obj.process_dat_file("/path/to/project_folder")
 
         """
         spikestuff_path = os.path.join(project_folder_path, "SpikeStuff") # Define the path to the SpikeStuff folder, output is a string
