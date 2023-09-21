@@ -94,10 +94,10 @@ class NeuralAnalysis:
                 total_recordings_in_group = sum(1 for item in os.listdir(group_path) if os.path.isdir(os.path.join(group_path, item)))
                 print(f"Group {group_index + 1}/{total_groups}: {group_name} has {total_recordings_in_group} recordings")
 
-                #add the group name to the dicionary
+                # Initialize the dictionary for the current group
                 recording_results[group_name] = {}
 
-
+                # Loop through all recordings in the current group
                 for recording_index, recording_name in enumerate(os.listdir(group_path)): #recording_index is the index of the recording in the group, recording_name is the name of the recording
                     recording_path = os.path.join(group_path, recording_name)
                     
