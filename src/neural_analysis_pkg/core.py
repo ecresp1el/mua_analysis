@@ -670,6 +670,98 @@ class NeuralAnalysis:
                 plt.axvline(x=500, color='r', linestyle='--')  # Mark stimulus offset
                 plt.show()
 
+    def calculate_psth_and_responsive_channels(self, recording_name, firing_rate_estimates, stim_id=8, bin_size=0.001):
+        """
+        Calculate the Peri-Stimulus Time Histogram (PSTH) and identify responsive channels using the output 
+        of `estimate_instantaneous_firing_rate_for_specific_recording` methods as input.
+        
+        Parameters
+        ----------
+        recording_name : str
+            The name of the recording to process.
+        firing_rate_estimates : ndarray
+            A 2D array where each row represents a channel and each column represents a time bin.
+            This is produced by the `estimate_instantaneous_firing_rate_for_specific_recording` method.
+        stim_id : int, optional
+            The ID of the stimulus to analyze. Default is 8.
+        bin_size : float, optional
+            The bin size for discretizing the spike times, in seconds. Default is 0.001.
+        
+        Notes
+        -----
+        This method uses the attributes `self.recording_results_df`, `self.stimulation_data_df`, and `self.n_channels`
+        to access the necessary data. The `firing_rate_estimates` parameter should be produced by the
+        `estimate_instantaneous_firing_rate_for_specific_recording` method.
+        
+        Returns
+        -------
+        None
+        """
+        
+        # Initialization
+        prestimulus_CI = []
+        poststimulus_CI = []
+        responsive_channels = []
+        
+        avg_firing_rates_for_responsive_channels = []
+        all_baseline_firing_rates = []
+        
+        
+        stim_data = self.stimulation_data_df[
+            (self.stimulation_data_df['recording_name'] == recording_name) & 
+            (self.stimulation_data_df['stimulation_ids'] == stim_id)
+        ]
+        
+        good_channels = self.recording_results_df.loc[
+            self.recording_results_df['recording_name'] == recording_name, 
+            'good_channels'
+        ].values[0]
+        noisy_channels = self.recording_results_df.loc[
+            self.recording_results_df['recording_name'] == recording_name, 
+            'noisy_channels'
+        ].values[0]
+        
+        good_channels = [ch for ch in good_channels if ch not in noisy_channels]
+
+        for ch in good_channels:
+            all_prestim_data = []
+            all_poststim_data = []
+            
+            for i, (onset, offset) in enumerate(zip(stim_data['onset_times'], stim_data['offset_times'])):
+                prestim_start_bin = int((onset - 0.2) / bin_size)
+                prestim_end_bin = int(onset / bin_size)
+                poststim_start_bin = int(onset / bin_size)
+                poststim_end_bin = int((onset + 0.08) / bin_size)
+                
+                prestim_data = np.mean(firing_rate_estimates[ch, prestim_start_bin:prestim_end_bin]) / bin_size
+                poststim_data = np.mean(firing_rate_estimates[ch, poststim_start_bin:poststim_end_bin]) / bin_size
+                
+                all_prestim_data.append(prestim_data)
+                all_poststim_data.append(poststim_data)
+            
+            prestim_bootstrap = bootstrap_ci(np.array(all_prestim_data))
+            poststim_bootstrap = bootstrap_ci(np.array(all_poststim_data))
+            
+            print(f"Channel {ch}: Pre-stim CI: {prestim_bootstrap}, Post-stim CI: {poststim_bootstrap}")
+            
+            prestimulus_CI.append(prestim_bootstrap)
+            poststimulus_CI.append(poststim_bootstrap)
+            
+            if poststim_bootstrap[0] > prestim_bootstrap[1]:
+                responsive_channels.append(ch)
+                avg_firing_rates_for_responsive_channels.append(np.mean(all_poststim_data))
+                all_baseline_firing_rates.extend(all_prestim_data)
+
+        print("Responsive channels:", responsive_channels)
+        
+        single_waveform = np.mean(avg_firing_rates_for_responsive_channels)
+        baseline = np.mean(all_baseline_firing_rates)
+        percent_change = ((single_waveform - baseline) / baseline) * 100
+
+        print(f"Single LED-evoked waveform: {single_waveform}")
+        print(f"Baseline: {baseline}")
+        print(f"Percent change relative to baseline: {percent_change}%")
+
 def create_gaussian_window(window_length=0.05, window_sd=0.005, bin_size=0.001):
     """
     Create a Gaussian window for convolution.
