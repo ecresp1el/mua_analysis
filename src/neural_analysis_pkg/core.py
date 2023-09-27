@@ -515,7 +515,7 @@ class NeuralAnalysis:
         
         return firing_rates
     
-    def estimate_instantaneous_firing_rate_for_specific_recording(self, recording_name, bin_size=0.001, window_length=0.05, window_sd=0.005):
+    def estimate_instantaneous_firing_rate_for_specific_recording(self, recording_name, bin_size=0.001, window_length=0.05, window_sd=0.005, smooth=True):
 
         # Get the mua_data_path for the current recording
         mua_data_path = self.recording_results_df.loc[
@@ -562,12 +562,113 @@ class NeuralAnalysis:
         
         # Step 6: Convolve the spike train with the Gaussian window to estimate the instantaneous firing rate
         firing_rate_estimates = np.zeros_like(spike_trains)
-
-        for ch in range(self.n_channels):
-            firing_rate_estimates[ch, :] = convolve(spike_trains[ch, :], gaussian_window, mode='same')
+        if smooth:
+            for ch in range(self.n_channels):
+                firing_rate_estimates[ch, :] = convolve(spike_trains[ch, :], gaussian_window, mode='same')
+        else: 
+            for ch in range(self.n_channels):
+                firing_rate_estimates[ch, :] = spike_trains[ch, :]
 
         return firing_rate_estimates
     
+    def calculate_psth_and_plot(self, recording_name, firing_rate_estimates, stim_id=8, bin_size=0.001):
+            """
+            Calculate the Peri-Stimulus Time Histogram (PSTH) for a given recording and stimulus ID.
+            
+            Parameters
+            ----------
+            recording_name : str
+                The name of the recording to process.
+            firing_rate_estimates : ndarray
+                A 2D array where each row represents a channel and each column represents a time bin.
+            stim_id : int, optional
+                The ID of the stimulus to consider. Default is 8 which is the 8Hz LED id.
+            bin_size : float, optional
+                The bin size for discretizing the spike times, in seconds. Default is 0.001.
+            
+            Returns
+            -------
+            mean_psth : ndarray
+                A 2D array where each row represents a channel and each column represents a time bin. The values represent the mean firing rates in Hz.
+            
+            Notes
+            -----
+            This method calculates the PSTH by first identifying the time windows corresponding to the specified stimulus ID.
+            It then aggregates the firing rate estimates within these time windows to calculate the mean PSTH.
+            """
+            
+            # Get the mua_data_path for the current recording
+            mua_data_path = self.recording_results_df.loc[
+                self.recording_results_df['recording_name'] == recording_name, 
+                'mua_data_path'
+            ].values[0]
+            
+            # Step 1: Identify the time windows for the specified stimulus_id
+            stim_data = self.stimulation_data_df[
+                (self.stimulation_data_df['recording_name'] == recording_name) & 
+                (self.stimulation_data_df['stimulation_ids'] == stim_id)
+            ]
+            # Get good and noisy channels for the current recording
+            good_channels = self.recording_results_df.loc[
+                self.recording_results_df['recording_name'] == recording_name, 
+                'good_channels'
+            ].values[0]
+            
+            noisy_channels = self.recording_results_df.loc[
+                self.recording_results_df['recording_name'] == recording_name, 
+                'noisy_channels'
+            ].values[0]
+
+            # Exclude noisy channels from good channels
+            good_channels = [ch for ch in good_channels if ch not in noisy_channels]
+
+            # Step 2 & 3: Aggregate the PSTH data
+            psth_duration_in_s = 1.5  # PSTH duration in seconds (1500 ms)
+            num_bins = int(psth_duration_in_s / bin_size)
+            sum_psth = np.zeros((self.n_channels, num_bins))  # Initialize with zeros
+            count_psth = np.zeros((self.n_channels, num_bins))  # Initialize with zeros
+
+            for i, (onset, offset) in enumerate(zip(stim_data['onset_times'], stim_data['offset_times'])):
+                for ch in good_channels:
+                    # Find the bins corresponding to the current time window (from -500ms to +1000ms relative to the onset)
+                    start_bin = int((onset - 0.5) / bin_size)
+                    end_bin = int((onset + 1.0) / bin_size)
+                    
+                    # within your loop where you extract trial_psth
+                    trial_psth = firing_rate_estimates[ch, start_bin:end_bin][:1500]
+                    
+                    #accumulate the sum and update the count in the relevant bins
+                    try: 
+                        sum_psth[ch, :] += np.nan_to_num(trial_psth)
+                        count_psth[ch, :] += np.isfinite(trial_psth)
+                    except ValueError: 
+                        # If lengths are mismatched, extend trial_psth with its last value
+                        if len(trial_psth) == len(sum_psth[ch, :]) - 1:
+                            trial_psth = np.append(trial_psth, trial_psth[-1])
+                            sum_psth[ch, :] += np.nan_to_num(trial_psth)
+                            count_psth[ch, :] += np.isfinite(trial_psth)
+                        else:
+                            print("Unexpected mismatch in lengths")
+        
+            # Calculate the mean PSTH by dividing the sum by the count
+            mean_psth = np.divide(sum_psth, count_psth, where=(count_psth!=0))
+            
+            # Convert firing rate from spikes per bin to spikes per second (Hz)
+            mean_psth /= bin_size
+
+            # Create a time axis that spans from -500 ms to +1000 ms
+            time_axis = np.linspace(-500, 1000, num_bins)
+
+            # Step 4: Plotting the mean PSTH for each channel
+            plt.figure()
+            for ch in range(self.n_channels):
+                plt.plot(time_axis, mean_psth[ch, :])
+                plt.xlabel('Time (ms)')
+                plt.ylabel('Firing Rate (Hz)')
+                plt.title(f'Channel {ch+1}')
+                plt.axvline(x=0, color='r', linestyle='--')  # Mark stimulus onset
+                plt.axvline(x=500, color='r', linestyle='--')  # Mark stimulus offset
+                plt.show()
 
 def create_gaussian_window(window_length=0.05, window_sd=0.005, bin_size=0.001):
     """
