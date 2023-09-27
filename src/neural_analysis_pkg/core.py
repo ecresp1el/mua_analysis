@@ -503,14 +503,14 @@ class NeuralAnalysis:
                 firing_rate = len(spikes_in_window) / (offset - onset)
                 firing_rates[ch, i] = firing_rate
                 
-            # Step 5: Plotting the heatmap (optional)
-            if plot_heatmap:
-                plt.imshow(firing_rates, aspect='auto', cmap='hot', interpolation='nearest')
-                plt.colorbar(label='Firing Rate (Hz)')
-                plt.ylabel('Channel')
-                plt.xlabel('Trial')
-                plt.title('Firing Rate Heatmap for Stimulus ID = 8 Hz LED')
-                plt.yticks(range(self.n_channels), range(1, self.n_channels+1))  # Label y-axis with channel numbers
-                plt.show()
+        # Step 5: Plotting the heatmap (optional)
+        if plot_heatmap:
+            plt.imshow(firing_rates, aspect='auto', cmap='hot', interpolation='nearest')
+            plt.colorbar(label='Firing Rate (Hz)')
+            plt.ylabel('Channel')
+            plt.xlabel('Trial')
+            plt.title('Firing Rate Heatmap for Stimulus ID = 8 Hz LED')
+            plt.yticks(range(self.n_channels), range(1, self.n_channels+1))  # Label y-axis with channel numbers
+            plt.show()
         
         return firing_rates
