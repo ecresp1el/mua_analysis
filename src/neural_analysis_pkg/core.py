@@ -546,20 +546,30 @@ class NeuralAnalysis:
         
         # Step 2: Determine the duration from the MUA data
         mua_data = np.load(mua_data_path)
-        duration = mua_data.shape[0] / 10000  # Convert number of samples to seconds (assuming 10 kHz sampling rate)
+        duration_secs = mua_data.shape[0] / 10000  # Convert number of samples to seconds (assuming 10 kHz sampling rate)
 
         # Step 3: Create a time vector with bins
-        time_vector = np.arange(0, duration, bin_size)
+        time_vector = np.arange(0, duration_secs, bin_size)
 
         # Step 4: Create a spike train matrix with each row representing a channel and each column representing a time bin
         spike_trains = np.zeros((n_channels, len(time_vector) - 1))
-
+            
+        # Loop through each channel to create a spike train matrix
         for ch in range(n_channels):
+            
+            # Filter the spike times for the current channel (ch)
+            # This gives us an array of spike times that occurred on this specific channel
             spike_times_ch = spike_times[spike_channels == ch]
+            
+            # Create a histogram of spike times for the current channel
+            # The histogram will have bins defined by the time_vector
+            # The np.histogram function returns two values: 
+            # 1) the frequency of spikes in each bin, 
+            # 2) the edges of the bins
+            # We are interested in the frequency of spikes, so we take the first value ([0])
             spike_trains[ch, :] = np.histogram(spike_times_ch, bins=time_vector)[0]
 
         # Step 5: Convolve the spike train with a Gaussian window to estimate the instantaneous firing rate
-        window_length_bins = int(window_length / bin_size)  # Convert window length from seconds to number of bins
         window_sd_bins = window_sd / bin_size  # Convert window SD from seconds to number of bins
         firing_rate_estimates = np.zeros_like(spike_trains)
 
@@ -567,3 +577,44 @@ class NeuralAnalysis:
             firing_rate_estimates[ch, :] = gaussian_filter1d(spike_trains[ch, :], sigma=window_sd_bins)
 
         return firing_rate_estimates
+    
+
+def create_gaussian_window(window_length=0.05, window_sd=0.005, bin_size=0.001):
+    """
+    Create a Gaussian window for convolution.
+    
+    Parameters
+    ----------
+    window_length : float
+        The length of the Gaussian window in seconds. For example, for a 50 ms window, use 0.05.
+    window_sd : float
+        The standard deviation of the Gaussian window in seconds. For example, for a 5 ms standard deviation, use 0.005.
+    bin_size : float
+        The bin size for discretizing the spike times, in seconds. For example, for a 1 ms bin size, use 0.001.
+        
+    Returns
+    -------
+    gaussian_window : ndarray
+        The Gaussian window for convolution. The length of the array is determined by the window_length and bin_size.
+        
+    Notes
+    -----
+    The Gaussian window is created by evaluating the Gaussian function at discrete points determined by the bin_size.
+    The Gaussian function is defined as:
+    
+    .. math::
+        f(x) = \frac{1}{\sqrt{2\pi\sigma^2}} e^{-\frac{x^2}{2\sigma^2}}
+        
+    where :math:`\sigma` is the standard deviation.
+    """
+    
+    # Calculate the number of bins for the Gaussian window based on window_length and bin_size
+    n_bins = int(window_length / bin_size)
+    
+    # Create an array representing time points centered around zero
+    t = np.linspace(-window_length / 2, window_length / 2, n_bins)
+    
+    # Create the Gaussian window using the Gaussian function formula
+    gaussian_window = (1 / (np.sqrt(2 * np.pi * window_sd ** 2))) * np.exp(-t ** 2 / (2 * window_sd ** 2))
+    
+    return gaussian_window
