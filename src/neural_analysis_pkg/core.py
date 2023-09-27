@@ -708,4 +708,7 @@ def create_gaussian_window(window_length=0.05, window_sd=0.005, bin_size=0.001):
     # Create the Gaussian window using the Gaussian function formula
     gaussian_window = (1 / (np.sqrt(2 * np.pi * window_sd ** 2))) * np.exp(-t ** 2 / (2 * window_sd ** 2))
     
+    # Normalize the Gaussian window so it sums to 1
+    gaussian_window /= np.sum(gaussian_window)
+    
     return gaussian_window
