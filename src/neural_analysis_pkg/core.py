@@ -509,7 +509,7 @@ class NeuralAnalysis:
             plt.colorbar(label='Firing Rate (Hz)')
             plt.ylabel('Channel')
             plt.xlabel('Trial')
-            plt.title('Firing Rate Heatmap for Stimulus ID = 8 Hz LED')
+            plt.title(f'Firing Rate Heatmap for 8 Hz LED, {recording_name}')
             plt.yticks(range(self.n_channels), range(1, self.n_channels+1))  # Label y-axis with channel numbers
             plt.show()
         
