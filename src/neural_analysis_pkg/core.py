@@ -846,15 +846,27 @@ class NeuralAnalysis:
         time_axis = np.linspace(-500, 1000, num_bins)
 
         # Step 4: Plotting the mean PSTH for each channel
-        plt.figure()
-        for ch in range(self.n_channels):
-            plt.plot(time_axis, mean_psth[ch, :])
-            plt.xlabel('Time (ms)')
-            plt.ylabel('Firing Rate (Hz)')
-            plt.title(f'Channel {ch+1}')
-            plt.axvline(x=0, color='r', linestyle='--')  # Mark stimulus onset
-            plt.axvline(x=500, color='r', linestyle='--')  # Mark stimulus offset
-            plt.show()
+        n_rows = 8  # Number of rows in the grid
+        n_cols = 4  # Number of columns in the grid
+
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(20, 40))  # Adjust the figure size
+        fig.subplots_adjust(hspace=0.4, wspace=0.4)  # Adjust the spacing between subplots
+        
+        # Add a title for the entire figure
+        fig.suptitle(f'Recording: {recording_name}', fontsize=24, y=0.90)  # Adjust y-coordinate of the title relative to the figure height (1.0)
+        
+        for i, ax in enumerate(axes.flatten()):
+            if i >= analysis.n_channels:
+                ax.axis('off')  # Turn off axes for empty subplots
+                continue
+            ax.plot(time_axis, mean_psth[i, :])
+            ax.set_xlabel('Time (ms)')
+            ax.set_ylabel('Firing Rate (Hz)')
+            ax.set_title(f'Channel {i+1}')
+            ax.axvline(x=0, color='r', linestyle='--')  # Mark stimulus onset
+            ax.axvline(x=500, color='r', linestyle='--')  # Mark stimulus offset
+
+        plt.show()
         
         
 
