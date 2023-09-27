@@ -5,9 +5,7 @@ import numpy as np
 from time import time 
 import gc 
 import pandas as pd 
-
-
-
+import matplotlib.pyplot as plt
 class NeuralAnalysis:
     """ 
     Initializes new objects created from the NeuralAnalysis class. It is at the class level within your core.py file.
@@ -438,3 +436,81 @@ class NeuralAnalysis:
             print(f"Processed and saved spike times for recording {idx+1}/{len(self.recording_results_df)}")
 
         print("Spike time extraction completed.")
+        
+    def calculate_firingratesfor8HzLEDstim_and_plot_heatmap_for_specific_recording(self, recording_name, plot_heatmap=True):
+        """
+        Calculate firing rates for 8Hz LED stimulation and optionally plot a heatmap for a specific recording.
+
+        Parameters
+        ----------
+        recording_name : str
+            The name of the recording for which to calculate firing rates and plot the heatmap.
+        plot_heatmap : bool, optional
+            Whether to plot the heatmap. Default is True.
+
+        Returns
+        -------
+        np.ndarray
+            A 2D array containing the firing rates for each channel and stimulus event. The shape of the array is (n_channels, n_stimulus_events).
+            Entire rows with value of NaN indicates that the corresponding channel at that index is a noisy channel.
+
+        Notes
+        -----
+        This method assumes that `recording_results_df` and `stimulation_data_df` are attributes of the NeuralAnalysis class.
+        """
+        
+        # Get the mua_data_path for the current recording to get the spike_data_path where the spike times are stored
+        mua_data_path = self.recording_results_df.loc[
+            self.recording_results_df['recording_name'] == recording_name, 
+            'mua_data_path'
+        ].values[0]
+        
+        # Construct the spike_data_path from the mua_data_path
+        spike_data_path = mua_data_path.replace('_MUA.npy', '_spike_times.npy')
+        
+        # Step 1: Identify the time windows for stimulus_id = 8, which is an 8Hz signal 
+        stim_data = self.stimulation_data_df[
+            (self.stimulation_data_df['recording_name'] == recording_name) & 
+            (self.stimulation_data_df['stimulation_ids'] == 8)
+        ]
+        
+        # Step 2: Load the corresponding spike times
+        spike_data = np.load(spike_data_path, allow_pickle=True)
+        spike_times = spike_data['time'] # spike_times are in seconds
+        spike_channels = spike_data['channel']
+        
+        # Get good and noisy channels for the current recording
+        good_channels = self.recording_results_df.loc[
+            self.recording_results_df['recording_name'] == recording_name, 
+            'good_channels'
+        ].values[0]
+        
+        # Step 3 & 4: Calculate and aggregate the firing rates
+        # Initialize a 2D array with NaNs. The shape is (number of channels, number of stimulus events).
+        firing_rates = np.full((self.n_channels, len(stim_data)), np.nan) 
+
+        # Loop through each stimulus event to calculate the firing rates.
+        for i, (onset, offset) in enumerate(zip(stim_data['onset_times'], stim_data['offset_times'])):
+            # Only good channels are considered, and their firing rates are stored in the corresponding indices.
+            # Loop through each good channel
+            
+            for ch in good_channels:
+                # Find spikes in the current channel that fall within the current time window (between onset and offset)
+                condition = (spike_channels == ch) & (spike_times >= onset) & (spike_times <= offset)
+                spikes_in_window = spike_times[np.where(condition)]
+                
+                # Calculate the firing rate as the number of spikes divided by the duration of the time window
+                firing_rate = len(spikes_in_window) / (offset - onset)
+                firing_rates[ch, i] = firing_rate
+                
+            # Step 5: Plotting the heatmap (optional)
+            if plot_heatmap:
+                plt.imshow(firing_rates, aspect='auto', cmap='hot', interpolation='nearest')
+                plt.colorbar(label='Firing Rate (Hz)')
+                plt.ylabel('Channel')
+                plt.xlabel('Trial')
+                plt.title('Firing Rate Heatmap for Stimulus ID = 8 Hz LED')
+                plt.yticks(range(self.n_channels), range(1, self.n_channels+1))  # Label y-axis with channel numbers
+                plt.show()
+        
+        return firing_rates
