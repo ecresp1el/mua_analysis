@@ -515,7 +515,7 @@ class NeuralAnalysis:
         
         return firing_rates
     
-    def estimate_instantaneous_firing_rate(self, recording_name, bin_size=0.001, window_length=0.05, window_sd=0.005):
+    def estimate_instantaneous_firing_rate_for_specific_recording(self, recording_name, bin_size=0.001, window_length=0.05, window_sd=0.005):
 
         # Get the mua_data_path for the current recording
         mua_data_path = self.recording_results_df.loc[
