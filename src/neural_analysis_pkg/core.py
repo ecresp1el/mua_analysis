@@ -762,7 +762,7 @@ class NeuralAnalysis:
         print(f"Baseline: {baseline}")
         print(f"Percent change relative to baseline: {percent_change}%")
         
-    def calculate_psth_and_plot(self, recording_name, firing_rate_estimates, stim_id=1, bin_size=0.001):
+    def calculate_psth_and_plot(self, recording_name, firing_rate_estimates, stim_id=8, bin_size=0.001):
         """
         Calculate the Peri-Stimulus Time Histogram (PSTH) for a given recording.
         
@@ -774,7 +774,7 @@ class NeuralAnalysis:
             A 2D array where each row represents a channel and each column represents a time bin.
             This is produced by the `estimate_instantaneous_firing_rate_for_specific_recording` method.
         stim_id : int, optional
-            The ID of the stimulus to analyze. Default is 1.
+            The ID of the stimulus to analyze. Default is 8 which is for 8Hz LED STIM.
         bin_size : float, optional
             The bin size for discretizing the spike times, in seconds. Default is 0.001.
         
