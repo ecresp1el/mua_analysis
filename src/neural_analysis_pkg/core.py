@@ -856,7 +856,7 @@ class NeuralAnalysis:
         fig.suptitle(f'Recording: {recording_name}', fontsize=24, y=0.90)  # Adjust y-coordinate of the title relative to the figure height (1.0)
         
         for i, ax in enumerate(axes.flatten()):
-            if i >= analysis.n_channels:
+            if i >= self.n_channels:
                 ax.axis('off')  # Turn off axes for empty subplots
                 continue
             ax.plot(time_axis, mean_psth[i, :])
