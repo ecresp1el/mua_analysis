@@ -514,3 +514,56 @@ class NeuralAnalysis:
             plt.show()
         
         return firing_rates
+    
+    def estimate_instantaneous_firing_rate(self, recording_name, n_channels, bin_size=0.001, window_length=0.05, window_sd=0.005):
+        """
+        Estimate the instantaneous firing rate by convolving the spike time series with a Gaussian window.
+
+        Parameters:
+        - recording_name (str): The name of the recording to process.
+        - n_channels (int): The number of channels in the recording.
+        - bin_size (float, optional): The bin size for discretizing the spike times, in seconds. Default is 1 ms (0.001 s).
+        - window_length (float, optional): The length of the Gaussian window in seconds. Default is 50 ms (0.05 s).
+        - window_sd (float, optional): The standard deviation of the Gaussian window in seconds. Default is 5 ms (0.005 s).
+
+        Returns:
+        - firing_rate_estimates (ndarray): A 2D array where each row represents a channel and each column represents a time bin. The values represent the estimated firing rates in Hz. NaN values indicate noisy channels.
+        """
+
+        # Get the mua_data_path for the current recording
+        mua_data_path = self.recording_results_df.loc[
+            self.recording_results_df['recording_name'] == recording_name, 
+            'mua_data_path'
+        ].values[0]
+        
+        # Construct the spike_data_path from the mua_data_path
+        spike_data_path = mua_data_path.replace('_MUA.npy', '_spike_times.npy')
+        
+        # Step 1: Load the spike data
+        spike_data = np.load(spike_data_path, allow_pickle=True)
+        spike_times = spike_data['time']
+        spike_channels = spike_data['channel']
+        
+        # Step 2: Determine the duration from the MUA data
+        mua_data = np.load(mua_data_path)
+        duration = mua_data.shape[0] / 10000  # Convert number of samples to seconds (assuming 10 kHz sampling rate)
+
+        # Step 3: Create a time vector with bins
+        time_vector = np.arange(0, duration, bin_size)
+
+        # Step 4: Create a spike train matrix with each row representing a channel and each column representing a time bin
+        spike_trains = np.zeros((n_channels, len(time_vector) - 1))
+
+        for ch in range(n_channels):
+            spike_times_ch = spike_times[spike_channels == ch]
+            spike_trains[ch, :] = np.histogram(spike_times_ch, bins=time_vector)[0]
+
+        # Step 5: Convolve the spike train with a Gaussian window to estimate the instantaneous firing rate
+        window_length_bins = int(window_length / bin_size)  # Convert window length from seconds to number of bins
+        window_sd_bins = window_sd / bin_size  # Convert window SD from seconds to number of bins
+        firing_rate_estimates = np.zeros_like(spike_trains)
+
+        for ch in range(n_channels):
+            firing_rate_estimates[ch, :] = gaussian_filter1d(spike_trains[ch, :], sigma=window_sd_bins)
+
+        return firing_rate_estimates
