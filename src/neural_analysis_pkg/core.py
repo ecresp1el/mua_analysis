@@ -712,3 +712,47 @@ def create_gaussian_window(window_length=0.05, window_sd=0.005, bin_size=0.001):
     gaussian_window /= np.sum(gaussian_window)
     
     return gaussian_window
+
+
+def bootstrap_ci(data, n_bootstraps=1000, ci=0.99):
+    """
+    Calculate the confidence interval for the mean of a dataset using bootstrapping.
+    
+    Parameters
+    ----------
+    data : ndarray
+        The 1D array of data points for which the confidence interval is to be calculated.
+    n_bootstraps : int, optional
+        The number of bootstrap samples to generate. Default is 1000.
+    ci : float, optional
+        The confidence level, expressed as a float between 0 and 1. Default is 0.99 for a 99% confidence interval.
+        
+    Returns
+    -------
+    lower : float
+        The lower bound of the confidence interval.
+    upper : float
+        The upper bound of the confidence interval.
+        
+    Notes
+    -----
+    This function uses bootstrapping to estimate the confidence interval for the mean of the given data.
+    It generates `n_bootstraps` resamples of the data with replacement and calculates the mean for each resample.
+    The lower and upper bounds of the confidence interval are then determined based on the desired confidence level (`ci`).
+    
+    Examples
+    --------
+    >>> data = np.array([1, 2, 3, 4, 5])
+    >>> bootstrap_ci(data, n_bootstraps=1000, ci=0.95)
+    (2.0, 4.0)
+    """
+    
+    bootstrapped_means = []
+    for i in range(n_bootstraps):
+        random_sample = np.random.choice(data, size=len(data), replace=True)
+        bootstrapped_means.append(np.mean(random_sample))
+        
+    lower = np.percentile(bootstrapped_means, (1-ci)/2 * 100)
+    upper = np.percentile(bootstrapped_means, (1+ci)/2 * 100)
+    
+    return lower, upper
