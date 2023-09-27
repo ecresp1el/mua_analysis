@@ -568,13 +568,15 @@ class NeuralAnalysis:
             # 2) the edges of the bins
             # We are interested in the frequency of spikes, so we take the first value ([0])
             spike_trains[ch, :] = np.histogram(spike_times_ch, bins=time_vector)[0]
-
-        # Step 5: Convolve the spike train with a Gaussian window to estimate the instantaneous firing rate
-        window_sd_bins = window_sd / bin_size  # Convert window SD from seconds to number of bins
+        
+        # Step 5: Create a Gaussian window
+        gaussian_window = create_gaussian_window(window_length=window_length, window_sd=window_sd, bin_size=bin_size)
+        
+        # Step 6: Convolve the spike train with the Gaussian window to estimate the instantaneous firing rate
         firing_rate_estimates = np.zeros_like(spike_trains)
 
         for ch in range(n_channels):
-            firing_rate_estimates[ch, :] = gaussian_filter1d(spike_trains[ch, :], sigma=window_sd_bins)
+            firing_rate_estimates[ch, :] = convolve(spike_trains[ch, :], gaussian_window, mode='same')
 
         return firing_rate_estimates
     
