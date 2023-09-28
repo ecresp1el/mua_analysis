@@ -764,7 +764,8 @@ class NeuralAnalysis:
         
     def calculate_psth_and_plot(self, recording_name, firing_rate_estimates, stim_id=8, bin_size=0.001):
         """
-        Calculate the Peri-Stimulus Time Histogram (PSTH) for a given recording.
+        Calculate the Peri-Stimulus Time Histogram (PSTH) for a given recording. This method will then plot 
+        the PSTH for each channel for all trials where stim_id is equal to the specified value. 
         
         Parameters
         ----------
@@ -872,6 +873,12 @@ class NeuralAnalysis:
         """
         Your docstring here
         """
+        # Initialize a 32x4 grid of subplots
+        fig, axs = plt.subplots(32, 4, figsize=(20, 160))  # Adjust the figure size
+        
+        # Add a title to the entire figure
+        fig.suptitle(f'Recording: {recording_name}', fontsize=16)
+        
         good_channels = self.recording_results_df.loc[
             self.recording_results_df['recording_name'] == recording_name, 
             'good_channels'
@@ -884,8 +891,6 @@ class NeuralAnalysis:
         good_channels = list(set(good_channels) - set(noisy_channels))
 
         for ch in good_channels:  # Loop through each channel
-            fig, axs = plt.subplots(1, 4, figsize=(20, 5))  # Create a 1x4 subplot for each channel
-
             for stim_id in range(1, 5):  # Loop through each stimulation ID
                 ax = axs[stim_id - 1]  # Get the correct axes
 
@@ -899,15 +904,15 @@ class NeuralAnalysis:
 
                 # Calculate and plot the mean PSTH for the pre epoch
                 mean_psth_pre = self.calculate_mean_psth(stim_data_pre, firing_rate_estimates, ch, bin_size)
-                ax.plot(mean_psth_pre, color='grey', label='Pre')
-
                 # Calculate and plot the mean PSTH for the post epoch
                 mean_psth_post = self.calculate_mean_psth(stim_data_post, firing_rate_estimates, ch, bin_size)
+                
+                ax.plot(mean_psth_pre, color='grey', label='Pre')
                 ax.plot(mean_psth_post, color='blue', label='Post')
-
-                ax.set_title(f'Stim ID = {stim_id}')
+                ax.set_title(f'Ch {ch+1}, Stim ID = {stim_id}')
                 ax.legend()
-
+            
+            plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Adjust the layout to make room for the title
             plt.tight_layout()
             plt.show()
             
