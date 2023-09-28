@@ -874,10 +874,10 @@ class NeuralAnalysis:
         Your docstring here
         """
         # Initialize a 32x4 grid of subplots
-        fig, axs = plt.subplots(32, 4, figsize=(20, 160))  # Adjust the figure size
+        fig, axs = plt.subplots(32, 4, figsize=(20, 160))  # Adjust the figure size as needed
         
         # Add a title to the entire figure
-        fig.suptitle(f'Recording: {recording_name}', fontsize=16)
+        fig.suptitle(f'Recording: {recording_name}', fontsize=16, y=90)
         
         good_channels = self.recording_results_df.loc[
             self.recording_results_df['recording_name'] == recording_name, 
@@ -888,12 +888,13 @@ class NeuralAnalysis:
             'noisy_channels'
         ].values[0]
         
-        good_channels = list(set(good_channels) - set(noisy_channels))
+        # Exclude noisy channels from good channels
+        good_channels = [ch for ch in good_channels if ch not in noisy_channels]
 
-        for ch in good_channels:  # Loop through each channel
+        for idx, ch in enumerate(good_channels):
             for stim_id in range(1, 5):  # Loop through each stimulation ID
-                ax = axs[stim_id - 1]  # Get the correct axes
-
+                ax = axs[idx, stim_id - 1]  # Get the correct axes
+                
                 # Separate the data into pre and post epochs based on the trial range specified
                 stim_data = self.stimulation_data_df[
                     (self.stimulation_data_df['recording_name'] == recording_name) & 
@@ -911,10 +912,9 @@ class NeuralAnalysis:
                 ax.plot(mean_psth_post, color='blue', label='Post')
                 ax.set_title(f'Ch {ch+1}, Stim ID = {stim_id}')
                 ax.legend()
-            
-            plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Adjust the layout to make room for the title
-            plt.tight_layout()
-            plt.show()
+                ax.axvline(x=500, color='r', linestyle='--')  # Mark stimulus onset
+        plt.show()
+
             
     def calculate_mean_psth(self, stim_data, firing_rate_estimates, ch, bin_size):
         psth_data = []
