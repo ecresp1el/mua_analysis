@@ -869,15 +869,26 @@ class NeuralAnalysis:
 
         plt.show()
         
-    def calculate_psth_pre_post_and_plot_allgoodchannels(self, recording_name, firing_rate_estimates, bin_size=0.001, pre_trials=30, post_trials=30):
+    def calculate_psth_pre_post_and_plot_allgoodchannels(self, recording_name, firing_rate_estimates, base_dir, bin_size=0.001, pre_trials=30, post_trials=30):
         """
         Your docstring here
         """
+        # Check if the base directory exists
+        if not os.path.exists(base_dir):
+            print(f"Base directory {base_dir} does not exist.")
+            return
+
+        # Create a new folder within the base directory
+        new_folder = 'whisker_psths_prevspost'
+        full_path = os.path.join(base_dir, new_folder)
+        if not os.path.exists(full_path):
+            os.makedirs(full_path)
+
         # Initialize a 32x4 grid of subplots
-        fig, axs = plt.subplots(32, 4, figsize=(20, 160))  # Adjust the figure size as needed
+        fig, axs = plt.subplots(32, 4, figsize=(20, 160))
         
         # Add a title to the entire figure
-        fig.suptitle(f'Recording: {recording_name}', fontsize=16, y=90)
+        fig.suptitle(f'Recording: {recording_name}', fontsize=16)
         
         good_channels = self.recording_results_df.loc[
             self.recording_results_df['recording_name'] == recording_name, 
@@ -913,7 +924,14 @@ class NeuralAnalysis:
                 ax.set_title(f'Ch {ch+1}, Stim ID = {stim_id}')
                 ax.legend()
                 ax.axvline(x=500, color='r', linestyle='--')  # Mark stimulus onset
-        plt.show()
+                
+        # Save the figure
+        save_path = os.path.join(full_path, f"{recording_name}_psth_prevspost.svg")
+        plt.savefig(save_path, dpi=300)
+        print(f"Figure saved at {save_path}")
+        
+        # plt.show()
+        
 
             
     def calculate_mean_psth(self, stim_data, firing_rate_estimates, ch, bin_size):
