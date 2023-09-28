@@ -868,6 +868,73 @@ class NeuralAnalysis:
 
         plt.show()
         
+    def calculate_psth_pre_post_and_plot_allgoodchannels(self, recording_name, firing_rate_estimates, bin_size=0.001, pre_trials=30, post_trials=30):
+        """
+        Your docstring here
+        """
+        good_channels = self.recording_results_df.loc[
+            self.recording_results_df['recording_name'] == recording_name, 
+            'good_channels'
+        ].values[0]
+        noisy_channels = self.recording_results_df.loc[
+            self.recording_results_df['recording_name'] == recording_name, 
+            'noisy_channels'
+        ].values[0]
+        
+        good_channels = list(set(good_channels) - set(noisy_channels))
+
+        for ch in good_channels:  # Loop through each channel
+            fig, axs = plt.subplots(1, 4, figsize=(20, 5))  # Create a 1x4 subplot for each channel
+
+            for stim_id in range(1, 5):  # Loop through each stimulation ID
+                ax = axs[stim_id - 1]  # Get the correct axes
+
+                # Separate the data into pre and post epochs based on the trial range specified
+                stim_data = self.stimulation_data_df[
+                    (self.stimulation_data_df['recording_name'] == recording_name) & 
+                    (self.stimulation_data_df['stimulation_ids'] == stim_id)
+                ]
+                stim_data_pre = stim_data.iloc[:pre_trials] # grabs all the rows up to the pre_trials value 
+                stim_data_post = stim_data.iloc[-post_trials:] # grabs all the rows from the end of the dataframe to the post_trials value
+
+                # Calculate and plot the mean PSTH for the pre epoch
+                mean_psth_pre = self.calculate_mean_psth(stim_data_pre, firing_rate_estimates, ch, bin_size)
+                ax.plot(mean_psth_pre, color='grey', label='Pre')
+
+                # Calculate and plot the mean PSTH for the post epoch
+                mean_psth_post = self.calculate_mean_psth(stim_data_post, firing_rate_estimates, ch, bin_size)
+                ax.plot(mean_psth_post, color='blue', label='Post')
+
+                ax.set_title(f'Stim ID = {stim_id}')
+                ax.legend()
+
+            plt.tight_layout()
+            plt.show()
+            
+    def calculate_mean_psth(self, stim_data, firing_rate_estimates, ch, bin_size):
+        psth_data = []
+        for i, onset in enumerate(stim_data['onset_times']):
+            # Define a time window of 1500ms centered on the stimulus onset (500ms pre-stimulus to 1000ms post-stimulus)
+            start_bin = int((onset - 0.5) / bin_size)
+            end_bin = int((onset + 1.0) / bin_size)
+            
+            # Get the PSTH data for the current trial
+            trial_psth = firing_rate_estimates[ch, start_bin:end_bin]
+            psth_data.append(trial_psth)
+        
+        # Ensuring all trials have the same shape by padding with NaNs to the maximum trial length
+        max_len = max(map(len, psth_data))
+        psth_data = [np.pad(trial, (0, max_len - len(trial)), 'constant', constant_values=np.nan) for trial in psth_data]
+
+        # Calculate the mean PSTH across trials
+        mean_psth = np.nanmean(np.stack(psth_data), axis=0)
+            
+        # Convert firing rate from spikes per bin to spikes per second (Hz)
+        mean_psth /= bin_size
+        
+        return mean_psth
+                
+        
         
 
 def create_gaussian_window(window_length=0.05, window_sd=0.005, bin_size=0.001):
