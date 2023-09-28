@@ -731,7 +731,7 @@ class NeuralAnalysis:
                 prestim_start_bin = int((onset - 0.2) / bin_size)
                 prestim_end_bin = int(onset / bin_size)
                 poststim_start_bin = int(onset / bin_size)
-                poststim_end_bin = int((onset + 0.08) / bin_size)
+                poststim_end_bin = int((onset + 0.5) / bin_size)
                 
                 prestim_data = np.mean(firing_rate_estimates[ch, prestim_start_bin:prestim_end_bin]) / bin_size
                 poststim_data = np.mean(firing_rate_estimates[ch, poststim_start_bin:poststim_end_bin]) / bin_size
