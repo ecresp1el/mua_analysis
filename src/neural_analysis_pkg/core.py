@@ -869,7 +869,7 @@ class NeuralAnalysis:
 
         plt.show()
         
-    def calculate_psth_pre_post_and_plot_allgoodchannels(self, recording_name, firing_rate_estimates, base_dir, bin_size=0.001, pre_trials=30, post_trials=30):
+    def calculate_psth_pre_post_and_plot_allgoodchannels(self, recording_name, firing_rate_estimates, base_dir, bin_size=0.001, pre_trials=30, post_trials=30, zoom_in=False):
         """
         Calculate and plot the Peri-Stimulus Time Histogram (PSTH) for both pre and post epochs for all good and noisy channels.
         
@@ -925,6 +925,7 @@ class NeuralAnalysis:
         
         # Define time bins
         time_axis_full = np.arange(-499, 1001)  # Assuming 1500 time bins from -499 to 1000 ms
+        time_axis_zoom = np.arange(-25, 51)  # Assuming 75 time bins from -25 to 50 ms
         
         # Check if the base directory exists
         if not os.path.exists(base_dir):
@@ -992,26 +993,26 @@ class NeuralAnalysis:
                     
                     #plotting
                     
-                    ax.plot(time_axis_full, mean_psth_pre, color='grey', label='Pre', zorder=2) #zorder=2 to make sure the grey line is on top of the blue line as it is a higher order
-                    ax.plot(time_axis_full, mean_psth_post, color='blue', label='Post', zorder=1)
-                    
-                    # Set x-axis ticks and labels for full plot
-                    ax.set_xticks(np.arange(-500, 1001, 100))  # Change the step size as needed
-                    ax.set_xticklabels(np.arange(-500, 1001, 100), rotation=45)  # Rotate labels to prevent overlap
-                    
-                    # For zoomed-in plot, you can do:
-                    # ax.set_xticks(np.arange(-25, 51, 5))
-                    # ax.set_xticklabels(np.arange(-25, 51, 5), rotation=45)
-
+                    if zoom_in:
+                        ax.plot(time_axis_zoom, mean_psth_pre[475:551], color='grey', label='Pre', zorder=2)
+                        ax.plot(time_axis_zoom, mean_psth_post[475:551], color='blue', label='Post', zorder=1)
+                        ax.set_xticks(np.arange(-25, 51, 5))
+                        ax.set_xticklabels(np.arange(-25, 51, 5), rotation=45)
+                    else: 
+                        ax.plot(time_axis_full, mean_psth_pre, color='grey', label='Pre', zorder=2)
+                        ax.plot(time_axis_full, mean_psth_post, color='blue', label='Post', zorder=1)
+                        ax.set_xticks(np.arange(-500, 1001, 100))
+                        ax.set_xticklabels(np.arange(-500, 1001, 100), rotation=45)
+                        
                     ax.axvline(x=0, color='r', linestyle='--')  # Mark stimulus onset at time = 0
                     ax.set_title(f'Ch {ch+1}, Stim ID = {stim_id}')
                     ax.legend()
-                    
                     
                     # Store the mean PSTHs in the dictionary
                     electrode_name = f"Ch_{ch+1}"
                     if electrode_name not in mean_psths_dict[recording_name]:
                         mean_psths_dict[recording_name][electrode_name] = {}
+                        
                     mean_psths_dict[recording_name][electrode_name]['pre-luciferin_mean_psth'] = mean_psth_pre
                     mean_psths_dict[recording_name][electrode_name]['post-luciferin_mean_psth'] = mean_psth_post
                     
