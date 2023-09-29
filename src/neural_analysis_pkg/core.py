@@ -983,23 +983,22 @@ class NeuralAnalysis:
                     mean_psth_post = self.calculate_mean_psth(stim_data_post, firing_rate_estimates, ch, bin_size)
                     
                     #combine both trimming and padding to ensure the array is always of length 1500
-                    # For mean_psth_pre
+                    # For mean_psth_pre - trim and pad
                     if len(mean_psth_pre) > 1500:
                         mean_psth_pre = mean_psth_pre[:1500]
                     elif len(mean_psth_pre) < 1500:
                         mean_psth_pre = np.pad(mean_psth_pre, (0, 1500 - len(mean_psth_pre)), 'constant')
-
-                    # For mean_psth_post
+                    # For mean_psth_post - trim and pad
                     if len(mean_psth_post) > 1500:
                         mean_psth_post = mean_psth_post[:1500]
                     elif len(mean_psth_post) < 1500:
                         mean_psth_post = np.pad(mean_psth_post, (0, 1500 - len(mean_psth_post)), 'constant')
                     
-                    ax.plot(mean_psth_pre[475:550], color='grey', label='Pre', zorder=2) #zorder=2 to make sure the grey line is on top of the blue line as it is a higher order
-                    ax.plot(mean_psth_post[475:550], color='blue', label='Post', zorder=1)
+                    ax.plot(mean_psth_pre, color='grey', label='Pre', zorder=2) #zorder=2 to make sure the grey line is on top of the blue line as it is a higher order
+                    ax.plot(mean_psth_post, color='blue', label='Post', zorder=1)
                     ax.set_title(f'Ch {ch+1}, Stim ID = {stim_id}')
                     ax.legend()
-                    ax.axvline(x=25, color='r', linestyle='--')  # Mark stimulus onset
+                    ax.axvline(x=500, color='r', linestyle='--')  # Mark stimulus onset
                     
                     # Store the mean PSTHs in the dictionary
                     electrode_name = f"Ch_{ch+1}"
@@ -1010,7 +1009,7 @@ class NeuralAnalysis:
                     
                     # To zoom in on a specific time range, e.g., -25 to 50 ms
                     # Uncomment the following line to activate zoom
-                    # ax.set_xlim(475, 550)  # Indices corresponding to -25 to 50 ms
+                    ax.set_xlim(475, 550)  # Indices corresponding to -25 to 50 ms
                 
                 else:  # If the channel is noisy
                     # You can either skip plotting or plot something to indicate it's a noisy channel
