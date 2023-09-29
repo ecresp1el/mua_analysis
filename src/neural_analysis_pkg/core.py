@@ -919,8 +919,8 @@ class NeuralAnalysis:
                 # Calculate and plot the mean PSTH for the post epoch
                 mean_psth_post = self.calculate_mean_psth(stim_data_post, firing_rate_estimates, ch, bin_size)
                 
-                ax.plot(mean_psth_pre, color='grey', label='Pre')
-                ax.plot(mean_psth_post, color='blue', label='Post')
+                ax.plot(mean_psth_pre, color='grey', label='Pre', zorder=2) #zorder=2 to make sure the grey line is on top of the blue line as it is a higher order
+                ax.plot(mean_psth_post, color='blue', label='Post', zorder=1)
                 ax.set_title(f'Ch {ch+1}, Stim ID = {stim_id}')
                 ax.legend()
                 ax.axvline(x=500, color='r', linestyle='--')  # Mark stimulus onset
