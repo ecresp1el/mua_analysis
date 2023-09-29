@@ -976,11 +976,11 @@ class NeuralAnalysis:
                     # Calculate and plot the mean PSTH for the post epoch
                     mean_psth_post = self.calculate_mean_psth(stim_data_post, firing_rate_estimates, ch, bin_size)
                     
-                    ax.plot(mean_psth_pre, color='grey', label='Pre', zorder=2) #zorder=2 to make sure the grey line is on top of the blue line as it is a higher order
-                    ax.plot(mean_psth_post, color='blue', label='Post', zorder=1)
+                    ax.plot(mean_psth_pre[475:550], color='grey', label='Pre', zorder=2) #zorder=2 to make sure the grey line is on top of the blue line as it is a higher order
+                    ax.plot(mean_psth_post[475:550], color='blue', label='Post', zorder=1)
                     ax.set_title(f'Ch {ch+1}, Stim ID = {stim_id}')
                     ax.legend()
-                    ax.axvline(x=500, color='r', linestyle='--')  # Mark stimulus onset
+                    ax.axvline(x=25, color='r', linestyle='--')  # Mark stimulus onset
                     
                     # Store the mean PSTHs in the dictionary
                     electrode_name = f"Ch_{ch+1}"
