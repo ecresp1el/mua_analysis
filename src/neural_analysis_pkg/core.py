@@ -1085,7 +1085,8 @@ class NeuralAnalysis:
                     post_data = epoch_data['post-luciferin_mean_psth']
 
                     if pre_data != 'N/A' and post_data != 'N/A':
-                        print(f"Shape of mean PSTH for {recording_name}, {channel}: {pre_data.shape}")
+                        print(f"Appending data for {recording_name}, {channel}. Shape of pre_data: {np.array(pre_data).shape}, Shape of post_data: {np.array(post_data).shape}")
+                    
                         
                         group_data[group_name]['pre'].append(pre_data)
                         group_data[group_name]['post'].append(post_data)
