@@ -962,10 +962,6 @@ class NeuralAnalysis:
             for stim_id in range(1, 5):  # Loop through each stimulation ID
                 ax = axs[idx, stim_id - 1]  # Get the correct axes
                 
-                # Set x-axis ticks and labels
-                ax.set_xticks(np.arange(0, 1500, 100))  # Change 100 to any other value for different granularity
-                ax.set_xticklabels(time_axis_full[::100])  # Synchronize with the above line
-                
                 # Check if the channel is good or noisy
                 if ch in good_channels:
                 
@@ -999,9 +995,13 @@ class NeuralAnalysis:
                     ax.plot(time_axis_full, mean_psth_pre, color='grey', label='Pre', zorder=2) #zorder=2 to make sure the grey line is on top of the blue line as it is a higher order
                     ax.plot(time_axis_full, mean_psth_post, color='blue', label='Post', zorder=1)
                     
-                    # Set x-axis ticks and labels
-                    ax.set_xticks(np.arange(-499, 1001, 100))  # Change the step size as needed
-                    ax.set_xticklabels(np.arange(-499, 1001, 100), rotation=45)  # Rotate labels to prevent overlap
+                    # Set x-axis ticks and labels for full plot
+                    ax.set_xticks(np.arange(-500, 1001, 100))  # Change the step size as needed
+                    ax.set_xticklabels(np.arange(-500, 1001, 100), rotation=45)  # Rotate labels to prevent overlap
+                    
+                    # For zoomed-in plot, you can do:
+                    # ax.set_xticks(np.arange(-25, 51, 5))
+                    # ax.set_xticklabels(np.arange(-25, 51, 5), rotation=45)
 
                     ax.axvline(x=0, color='r', linestyle='--')  # Mark stimulus onset at time = 0
                     ax.set_title(f'Ch {ch+1}, Stim ID = {stim_id}')
@@ -1015,9 +1015,6 @@ class NeuralAnalysis:
                     mean_psths_dict[recording_name][electrode_name]['pre-luciferin_mean_psth'] = mean_psth_pre
                     mean_psths_dict[recording_name][electrode_name]['post-luciferin_mean_psth'] = mean_psth_post
                     
-                    # To zoom in on a specific time range, e.g., -25 to 50 ms
-                    # Uncomment the following line to activate zoom
-                    ax.set_xlim([-25, 50])  # Zoom in from -25 ms to 50 ms
                 
                 else:  # If the channel is noisy
                     # You can either skip plotting or plot something to indicate it's a noisy channel
