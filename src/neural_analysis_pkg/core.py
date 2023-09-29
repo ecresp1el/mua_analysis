@@ -923,6 +923,8 @@ class NeuralAnalysis:
         # Initialize a dictionary to store mean PSTHs
         mean_psths_dict = {recording_name: {}}
         
+        # Define time bins
+        time_bins = np.arange(-499, 1001)  # Assuming 1500 time bins from -499 to 1000 ms
         
         # Check if the base directory exists
         if not os.path.exists(base_dir):
@@ -960,6 +962,10 @@ class NeuralAnalysis:
             for stim_id in range(1, 5):  # Loop through each stimulation ID
                 ax = axs[idx, stim_id - 1]  # Get the correct axes
                 
+                # Set x-axis ticks and labels
+                ax.set_xticks(np.arange(0, 1500, 100))  # Change 100 to any other value for different granularity
+                ax.set_xticklabels(time_bins[::100])  # Synchronize with the above line
+                
                 # Check if the channel is good or noisy
                 if ch in good_channels:
                 
@@ -976,6 +982,19 @@ class NeuralAnalysis:
                     # Calculate and plot the mean PSTH for the post epoch
                     mean_psth_post = self.calculate_mean_psth(stim_data_post, firing_rate_estimates, ch, bin_size)
                     
+                    #combine both trimming and padding to ensure the array is always of length 1500
+                    # For mean_psth_pre
+                    if len(mean_psth_pre) > 1500:
+                        mean_psth_pre = mean_psth_pre[:1500]
+                    elif len(mean_psth_pre) < 1500:
+                        mean_psth_pre = np.pad(mean_psth_pre, (0, 1500 - len(mean_psth_pre)), 'constant')
+
+                    # For mean_psth_post
+                    if len(mean_psth_post) > 1500:
+                        mean_psth_post = mean_psth_post[:1500]
+                    elif len(mean_psth_post) < 1500:
+                        mean_psth_post = np.pad(mean_psth_post, (0, 1500 - len(mean_psth_post)), 'constant')
+                    
                     ax.plot(mean_psth_pre[475:550], color='grey', label='Pre', zorder=2) #zorder=2 to make sure the grey line is on top of the blue line as it is a higher order
                     ax.plot(mean_psth_post[475:550], color='blue', label='Post', zorder=1)
                     ax.set_title(f'Ch {ch+1}, Stim ID = {stim_id}')
@@ -987,13 +1006,18 @@ class NeuralAnalysis:
                     if electrode_name not in mean_psths_dict[recording_name]:
                         mean_psths_dict[recording_name][electrode_name] = {}
                     mean_psths_dict[recording_name][electrode_name]['pre-luciferin_mean_psth'] = mean_psth_pre
-                    mean_psths_dict[recording_name][electrode_name]['post-luciferin_mean_psth'] = mean_psth_post  
+                    mean_psths_dict[recording_name][electrode_name]['post-luciferin_mean_psth'] = mean_psth_post
+                    
+                    # To zoom in on a specific time range, e.g., -25 to 50 ms
+                    # Uncomment the following line to activate zoom
+                    # ax.set_xlim(475, 550)  # Indices corresponding to -25 to 50 ms
                 
                 else:  # If the channel is noisy
                     # You can either skip plotting or plot something to indicate it's a noisy channel
                     # For example, you could fill the subplot with a solid color to indicate it's noisy
                     ax.set_facecolor('lightgray')
                     ax.set_title(f'Ch {ch+1} (Noisy), Stim ID = {stim_id}')
+                    
                     
                     # Store N/As in the dictionary for noisy channels
                     electrode_name = f"Ch_{ch+1}"
