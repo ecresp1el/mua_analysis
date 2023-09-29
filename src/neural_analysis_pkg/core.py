@@ -1061,7 +1061,7 @@ class NeuralAnalysis:
         Parameters
         ----------
         list_of_dicts : list
-            List of dictionaries containing mean PSTHs for each recording.
+            List of dictionaries containing mean PSTHs for each recording.de
 
         Returns
         -------
