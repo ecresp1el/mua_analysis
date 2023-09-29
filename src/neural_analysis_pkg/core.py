@@ -775,7 +775,7 @@ class NeuralAnalysis:
             A 2D array where each row represents a channel and each column represents a time bin.
             This is produced by the `estimate_instantaneous_firing_rate_for_specific_recording` method.
         stim_id : int, optional
-            The ID of the stimulus to analyze. Default is 8 which is for 8Hz LED STIM.
+            The ID of the stimulus to analyze. Default is 8 which is for 8Hz LED STIM. Can be switcthed for 1,2,3 or 4 for other stimulations.
         bin_size : float, optional
             The bin size for discretizing the spike times, in seconds. Default is 0.001.
         
