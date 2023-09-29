@@ -960,6 +960,8 @@ class NeuralAnalysis:
         plt.savefig(save_path, dpi=300)
         print(f"Figure saved at {save_path}")
         
+        return mean_psths_dict
+        
 
             
     def calculate_mean_psth(self, stim_data, firing_rate_estimates, ch, bin_size):
