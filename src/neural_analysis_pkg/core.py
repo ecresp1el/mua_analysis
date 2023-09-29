@@ -873,6 +873,10 @@ class NeuralAnalysis:
         """
         Your docstring here
         """
+        # Initialize a dictionary to store mean PSTHs
+        mean_psths_dict = {recording_name: {}}
+        
+        
         # Check if the base directory exists
         if not os.path.exists(base_dir):
             print(f"Base directory {base_dir} does not exist.")
@@ -902,29 +906,55 @@ class NeuralAnalysis:
         # Exclude noisy channels from good channels
         good_channels = [ch for ch in good_channels if ch not in noisy_channels]
 
-        for idx, ch in enumerate(good_channels):
+        # Loop through all channels (both good and noisy)
+        all_channels = set(good_channels).union(set(noisy_channels))
+        
+        for idx, ch in enumerate(all_channels):
             for stim_id in range(1, 5):  # Loop through each stimulation ID
                 ax = axs[idx, stim_id - 1]  # Get the correct axes
                 
-                # Separate the data into pre and post epochs based on the trial range specified
-                stim_data = self.stimulation_data_df[
-                    (self.stimulation_data_df['recording_name'] == recording_name) & 
-                    (self.stimulation_data_df['stimulation_ids'] == stim_id)
-                ]
-                stim_data_pre = stim_data.iloc[:pre_trials] # grabs all the rows up to the pre_trials value 
-                stim_data_post = stim_data.iloc[-post_trials:] # grabs all the rows from the end of the dataframe to the post_trials value
+                # Check if the channel is good or noisy
+                if ch in good_channels:
+                
+                    # Separate the data into pre and post epochs based on the trial range specified
+                    stim_data = self.stimulation_data_df[
+                        (self.stimulation_data_df['recording_name'] == recording_name) & 
+                        (self.stimulation_data_df['stimulation_ids'] == stim_id)
+                    ]
+                    stim_data_pre = stim_data.iloc[:pre_trials] # grabs all the rows up to the pre_trials value 
+                    stim_data_post = stim_data.iloc[-post_trials:] # grabs all the rows from the end of the dataframe to the post_trials value
 
-                # Calculate and plot the mean PSTH for the pre epoch
-                mean_psth_pre = self.calculate_mean_psth(stim_data_pre, firing_rate_estimates, ch, bin_size)
-                # Calculate and plot the mean PSTH for the post epoch
-                mean_psth_post = self.calculate_mean_psth(stim_data_post, firing_rate_estimates, ch, bin_size)
+                    # Calculate and plot the mean PSTH for the pre epoch
+                    mean_psth_pre = self.calculate_mean_psth(stim_data_pre, firing_rate_estimates, ch, bin_size)
+                    # Calculate and plot the mean PSTH for the post epoch
+                    mean_psth_post = self.calculate_mean_psth(stim_data_post, firing_rate_estimates, ch, bin_size)
+                    
+                    ax.plot(mean_psth_pre, color='grey', label='Pre', zorder=2) #zorder=2 to make sure the grey line is on top of the blue line as it is a higher order
+                    ax.plot(mean_psth_post, color='blue', label='Post', zorder=1)
+                    ax.set_title(f'Ch {ch+1}, Stim ID = {stim_id}')
+                    ax.legend()
+                    ax.axvline(x=500, color='r', linestyle='--')  # Mark stimulus onset
+                    
+                    # Store the mean PSTHs in the dictionary
+                    electrode_name = f"Ch_{ch+1}"
+                    if electrode_name not in mean_psths_dict[recording_name]:
+                        mean_psths_dict[recording_name][electrode_name] = {}
+                    mean_psths_dict[recording_name][electrode_name]['pre-luciferin_mean_psth'] = mean_psth_pre
+                    mean_psths_dict[recording_name][electrode_name]['post-luciferin_mean_psth'] = mean_psth_post  
                 
-                ax.plot(mean_psth_pre, color='grey', label='Pre', zorder=2) #zorder=2 to make sure the grey line is on top of the blue line as it is a higher order
-                ax.plot(mean_psth_post, color='blue', label='Post', zorder=1)
-                ax.set_title(f'Ch {ch+1}, Stim ID = {stim_id}')
-                ax.legend()
-                ax.axvline(x=500, color='r', linestyle='--')  # Mark stimulus onset
-                
+                else:  # If the channel is noisy
+                    # You can either skip plotting or plot something to indicate it's a noisy channel
+                    # For example, you could fill the subplot with a solid color to indicate it's noisy
+                    ax.set_facecolor('lightgray')
+                    ax.set_title(f'Ch {ch+1} (Noisy), Stim ID = {stim_id}')
+                    
+                    # Store N/As in the dictionary for noisy channels
+                    electrode_name = f"Ch_{ch+1}"
+                    if electrode_name not in mean_psths_dict[recording_name]:
+                        mean_psths_dict[recording_name][electrode_name] = {}
+                    mean_psths_dict[recording_name][electrode_name]['pre-luciferin'] = 'N/A'
+                    mean_psths_dict[recording_name][electrode_name]['post-luciferin'] = 'N/A'                    
+                                
         # Save the figure
         save_path = os.path.join(full_path, f"{recording_name}_psth_prevspost.svg")
         plt.savefig(save_path, dpi=300)
