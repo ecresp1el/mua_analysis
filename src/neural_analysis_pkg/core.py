@@ -1053,7 +1053,67 @@ class NeuralAnalysis:
         mean_psth /= bin_size
         
         return mean_psth
+    
+    def plot_grouped_mean_and_sem_psth(self, list_of_dicts):
+        """
+        Plot the mean and SEM of the mean PSTHs for both pre and post epochs, grouped by the group_name.
+
+        Parameters
+        ----------
+        list_of_dicts : list
+            List of dictionaries containing mean PSTHs for each recording.
+
+        Returns
+        -------
+        None
+            This function will generate and display the plot.
+        """
+        # Initialize dictionaries to store group data
+        group_data = {}
+        unique_group_names = self.recording_results_df['group_name'].unique()
+
+        for group_name in unique_group_names:
+            group_data[group_name] = {'pre': [], 'post': []}
+
+        # Loop through each dictionary in the list
+        for mean_psths_dict in list_of_dicts:
+            for recording_name, channel_data in mean_psths_dict.items():
+                group_name = self.recording_results_df.loc[self.recording_results_df['recording_name'] == recording_name, 'group_name'].values[0]
                 
+                for channel, epoch_data in channel_data.items():
+                    pre_data = epoch_data['pre-luciferin_mean_psth']
+                    post_data = epoch_data['post-luciferin_mean_psth']
+
+                    if pre_data != 'N/A' and post_data != 'N/A':
+                        print(f"Shape of mean PSTH for {recording_name}, {channel}: {pre_data.shape}")
+                        
+                        group_data[group_name]['pre'].append(pre_data)
+                        group_data[group_name]['post'].append(post_data)
+
+        # Generate the plot
+        plt.figure(figsize=(10, 6))
+
+        for group_name, epoch_data in group_data.items():
+            pre_data = np.array(epoch_data['pre'])
+            post_data = np.array(epoch_data['post'])
+
+            mean_pre = np.nanmean(pre_data, axis=0)
+            sem_pre = np.nanstd(pre_data, axis=0) / np.sqrt(pre_data.shape[0])
+
+            mean_post = np.nanmean(post_data, axis=0)
+            sem_post = np.nanstd(post_data, axis=0) / np.sqrt(post_data.shape[0])
+
+            plt.plot(mean_pre, label=f"{group_name} Pre", color='blue')
+            plt.fill_between(range(len(mean_pre)), mean_pre - sem_pre, mean_pre + sem_pre, color='blue', alpha=0.3)
+
+            plt.plot(mean_post, label=f"{group_name} Post", color='grey')
+            plt.fill_between(range(len(mean_post)), mean_post - sem_post, mean_post + sem_post, color='grey', alpha=0.3)
+
+        plt.legend()
+        plt.xlabel('Time (ms)')
+        plt.ylabel('Firing Rate (Hz)')
+        plt.title('Grouped Mean and SEM PSTH')
+        plt.show()
         
         
 
