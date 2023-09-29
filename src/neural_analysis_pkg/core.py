@@ -871,7 +871,54 @@ class NeuralAnalysis:
         
     def calculate_psth_pre_post_and_plot_allgoodchannels(self, recording_name, firing_rate_estimates, base_dir, bin_size=0.001, pre_trials=30, post_trials=30):
         """
-        Your docstring here
+        Calculate and plot the Peri-Stimulus Time Histogram (PSTH) for both pre and post epochs for all good and noisy channels.
+        
+        Parameters
+        ----------
+        recording_name : str
+            The name of the recording to process.
+        firing_rate_estimates : ndarray
+            A 2D array where each row represents a channel and each column represents a time bin.
+        base_dir : str
+            The base directory where the figure will be saved.
+        bin_size : float, optional
+            The bin size for discretizing the spike times, in seconds. Default is 0.001.
+        pre_trials : int, optional
+            The number of trials to consider for the pre epoch. Default is 30.
+        post_trials : int, optional
+            The number of trials to consider for the post epoch. Default is 30.
+            
+        Returns
+        -------
+        None
+            This function saves the figure and populates a nested dictionary with mean PSTHs for both good and noisy channels.
+            
+        Nested Dictionary Structure
+        ---------------------------
+        The nested dictionary will have the following structure:
+        
+        {
+            'recording_name_1': {
+                'ch_1': {
+                    'pre-luciferin_mean_psth': ndarray,
+                    'post-luciferin_mean_psth': ndarray
+                },
+                'ch_2': {
+                    'pre-luciferin_mean_psth': ndarray,
+                    'post-luciferin_mean_psth': ndarray
+                },
+                ...
+            },
+            'recording_name_2': {
+                ...
+            },
+            ...
+        }
+        
+        - The first level keys are the recording names.
+        - The second level keys are the channel names or indices. Note that the keys are 1-32 which maps to channels 0-31. 
+        - The third level keys are 'pre-luciferin_mean_psth' and 'post-luciferin_mean_psth', and their values are the mean PSTHs for those epochs.
+        - For noisy channels, the values for 'pre-luciferin_mean_psth' and 'post-luciferin_mean_psth' will be set to 'N/A'.
         """
         # Initialize a dictionary to store mean PSTHs
         mean_psths_dict = {recording_name: {}}
@@ -952,8 +999,8 @@ class NeuralAnalysis:
                     electrode_name = f"Ch_{ch+1}"
                     if electrode_name not in mean_psths_dict[recording_name]:
                         mean_psths_dict[recording_name][electrode_name] = {}
-                    mean_psths_dict[recording_name][electrode_name]['pre-luciferin'] = 'N/A'
-                    mean_psths_dict[recording_name][electrode_name]['post-luciferin'] = 'N/A'                    
+                    mean_psths_dict[recording_name][electrode_name]['pre-luciferin_mean_psth'] = 'N/A'
+                    mean_psths_dict[recording_name][electrode_name]['post-luciferin_mean_psth'] = 'N/A'                    
                                 
         # Save the figure
         save_path = os.path.join(full_path, f"{recording_name}_psth_prevspost.svg")
@@ -965,6 +1012,26 @@ class NeuralAnalysis:
 
             
     def calculate_mean_psth(self, stim_data, firing_rate_estimates, ch, bin_size):
+        """
+        Calculate the mean Peri-Stimulus Time Histogram (PSTH) for a given channel and stimulation data.
+        
+        Parameters
+        ----------
+        stim_data : DataFrame
+            A DataFrame containing the stimulation data for the specific recording and stimulation ID.
+        firing_rate_estimates : ndarray
+            A 2D array where each row represents a channel and each column represents a time bin.
+        ch : int
+            The channel index to process.
+        bin_size : float
+            The bin size for discretizing the spike times, in seconds.
+            
+        Returns
+        -------
+        mean_psth : ndarray
+            The mean PSTH for the given channel and stimulation data, in spikes per second (Hz).
+        """
+
         psth_data = []
         for i, onset in enumerate(stim_data['onset_times']):
             # Define a time window of 1500ms centered on the stimulus onset (500ms pre-stimulus to 1000ms post-stimulus)
