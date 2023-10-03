@@ -438,6 +438,44 @@ class NeuralAnalysis:
         print("Spike time extraction completed.")
         
     def enhanced_spike_detection_and_filtering(self, md=10):
+        """
+        Perform enhanced spike detection and filtering on multi-unit activity (MUA) data.
+        
+        Parameters
+        ----------
+        md : int, optional
+            The number of samples that must pass the threshold successively for a spike to be confirmed. Default is 10.
+            
+        Attributes
+        ----------
+        confirmed_spikes : list of tuple
+            List of tuples where each tuple contains the local minimum sample index (aligned spike time) and the channel index.
+        
+        spike_waveforms : list of ndarray
+            List of NumPy arrays where each array contains the waveform of a confirmed spike.
+            
+        Outputs
+        -------
+        confirmed_spikes.npy : structured ndarray
+            A structured NumPy array saved to disk, containing two fields: 'time' and 'channel'.
+            - 'time': The time of each confirmed spike in seconds.
+            - 'channel': The channel where the spike was detected.
+            
+        spike_waveforms.npy : structured ndarray
+            A structured NumPy array saved to disk, containing two fields: 'waveform' and 'channel'.
+            - 'waveform': The waveform of each confirmed spike.
+            - 'channel': The channel where the spike waveform was detected.
+            
+        Notes
+        -----
+        - The method performs three main steps:
+            1. Enhanced Spike Detection: Reduces false alarms by checking that the next 'md' samples also cross the threshold.
+            2. Adaptive Detection: Extracts waveforms around each confirmed spike for further analysis.
+            3. Statistical Filtering: Filters out false positives based on waveform characteristics.
+            
+        - The method saves the confirmed spikes and their waveforms as structured NumPy arrays.
+        """
+        
         # Initialize lists to store the confirmed spikes and their waveforms
         confirmed_spikes = []
         spike_waveforms = []
@@ -519,21 +557,24 @@ class NeuralAnalysis:
             confirmed_spikes_array = np.zeros(len(confirmed_spikes), dtype=[('time', 'f8'), ('channel', 'i4')])
             confirmed_spikes_array['time'] = np.array([x[0] for x in confirmed_spikes]) / 10000  # Convert back to time in seconds
             confirmed_spikes_array['channel'] = np.array([x[1] for x in confirmed_spikes])
-
+                
             # Create a structured array for spike waveforms, including channel information
-            dtype_waveform = [('waveform', f'f8, {int(0.0005 * 10000) + int(0.001 * 10000)}'), ('channel', 'i4')]
+            waveform_length = int(0.0005 * 10000) + int(0.001 * 10000)
+            dtype_waveform = [('waveform', f'f8', (waveform_length,)), ('channel', 'i4')]
             spike_waveforms_array = np.zeros(len(spike_waveforms), dtype=dtype_waveform)
-            spike_waveforms_array['waveform'] = [x[0] for x in spike_waveforms]
-            spike_waveforms_array['channel'] = [x[1] for x in spike_waveforms]
-
+            
+            # Properly populate the 'waveform' and 'channel' fields in the structured array
+            for i, waveform in enumerate(spike_waveforms):
+                spike_waveforms_array['waveform'][i] = waveform
+                spike_waveforms_array['channel'][i] = confirmed_spikes[i][1]  # Assume the channel info is aligned with confirmed_spikes
+            
             # Define output paths and save the arrays
             output_spikes_path = os.path.join(os.path.dirname(mua_data_path), f"{os.path.basename(mua_data_path).replace('_MUA.npy', '_confirmed_spikes.npy')}")
             np.save(output_spikes_path, confirmed_spikes_array)
             
-            spike_waveforms_array = np.array(spike_waveforms)
             output_waveforms_path = os.path.join(os.path.dirname(mua_data_path), f"{os.path.basename(mua_data_path).replace('_MUA.npy', '_spike_waveforms.npy')}")
             np.save(output_waveforms_path, spike_waveforms_array)
-            
+
             print(f"Data for recording {idx+1} saved. Moving to next recording...")
             
         print("Enhanced spike detection and filtering completed.")
@@ -660,7 +701,86 @@ class NeuralAnalysis:
             spike_trains[ch, :] = np.histogram(spike_times_ch, bins=time_vector)[0]
         
         # Step 5: Create a Gaussian window
-        gaussian_window = create_xgaussian_window(window_length=window_length, window_sd=window_sd, bin_size=bin_size)
+        gaussian_window = create_gaussian_window(window_length=window_length, window_sd=window_sd, bin_size=bin_size)
+        
+        # Step 6: Convolve the spike train with the Gaussian window to estimate the instantaneous firing rate
+        firing_rate_estimates = np.zeros_like(spike_trains)
+        if smooth:
+            for ch in range(self.n_channels):
+                firing_rate_estimates[ch, :] = convolve(spike_trains[ch, :], gaussian_window, mode='same')
+        else: 
+            for ch in range(self.n_channels):
+                firing_rate_estimates[ch, :] = spike_trains[ch, :]
+
+        return firing_rate_estimates
+    
+    def estimate_instantaneous_firing_rate_for_confirmed_spikes_for_specific_recording(self, recording_name, bin_size=0.001, window_length=0.05, window_sd=0.005, smooth=True):
+        """
+        Estimate the instantaneous firing rate based on confirmed spikes.
+        
+        Parameters
+        ----------
+        recording_name : str
+            The name of the recording for which the firing rate needs to be calculated.
+            
+        bin_size : float, optional
+            The size of each time bin in seconds. Default is 0.001.
+            
+        window_length : float, optional
+            The length of the Gaussian window in seconds. Default is 0.05.
+            
+        window_sd : float, optional
+            The standard deviation of the Gaussian window in seconds. Default is 0.005.
+            
+        smooth : bool, optional
+            Whether to smooth the spike train or not. Default is True.
+            
+        Returns
+        -------
+        firing_rate_estimates : ndarray
+            An array containing the firing rate estimates for each channel.
+        """
+        
+        # Construct the confirmed_spikes_path from the mua_data_path
+        mua_data_path = self.recording_results_df.loc[
+            self.recording_results_df['recording_name'] == recording_name, 
+            'mua_data_path'
+        ].values[0]
+        confirmed_spikes_path = mua_data_path.replace('_MUA.npy', '_confirmed_spikes.npy')
+        
+        # Step 1: Load the confirmed spike data
+        confirmed_spikes_data = np.load(confirmed_spikes_path, allow_pickle=True)
+        spike_times = confirmed_spikes_data['time']
+        spike_channels = confirmed_spikes_data['channel']
+        
+        # Step 2: Determine the duration from the MUA data
+        mua_data = np.load(mua_data_path)
+        duration_secs = mua_data.shape[0] / 10000  # Convert number of samples to seconds (assuming 10 kHz sampling rate)
+
+        # Step 3: Create a time vector with bins
+        time_vector = np.arange(0, duration_secs, bin_size)
+
+        
+        # Step 4: Create a spike train matrix with each row representing a channel and each column representing a time bin
+        spike_trains = np.zeros((self.n_channels, len(time_vector) - 1))
+            
+        # Loop through each channel to create a spike train matrix
+        for ch in range(self.n_channels):
+            
+            # Filter the spike times for the current channel (ch)
+            # This gives us an array of spike times that occurred on this specific channel
+            spike_times_ch = spike_times[spike_channels == ch]
+            
+            # Create a histogram of spike times for the current channel
+            # The histogram will have bins defined by the time_vector
+            # The np.histogram function returns two values: 
+            # 1) the frequency of spikes in each bin, 
+            # 2) the edges of the bins
+            # We are interested in the frequency of spikes, so we take the first value ([0])
+            spike_trains[ch, :] = np.histogram(spike_times_ch, bins=time_vector)[0]
+        
+        # Step 5: Create a Gaussian window
+        gaussian_window = create_gaussian_window(window_length=window_length, window_sd=window_sd, bin_size=bin_size)
         
         # Step 6: Convolve the spike train with the Gaussian window to estimate the instantaneous firing rate
         firing_rate_estimates = np.zeros_like(spike_trains)
@@ -698,12 +818,6 @@ class NeuralAnalysis:
             This method calculates the PSTH by first identifying the time windows corresponding to the specified stimulus ID.
             It then aggregates the firing rate estimates within these time windows to calculate the mean PSTH.
             """
-            
-            # Get the mua_data_path for the current recording
-            mua_data_path = self.recording_results_df.loc[
-                self.recording_results_df['recording_name'] == recording_name, 
-                'mua_data_path'
-            ].values[0]
             
             # Step 1: Identify the time windows for the specified stimulus_id
             stim_data = self.stimulation_data_df[
