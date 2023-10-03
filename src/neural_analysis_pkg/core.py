@@ -444,6 +444,7 @@ class NeuralAnalysis:
         
         # Iterating through each recording
         for idx, row in self.recording_results_df.iterrows():
+            print(f"Processing recording {idx+1}/{len(self.recording_results_df)}...")
             # Load the MUA data
             mua_data_path = row['mua_data_path']
             mua_data = np.load(mua_data_path)
@@ -459,6 +460,8 @@ class NeuralAnalysis:
             # Convert spike times back to indices
             spike_indices = (spike_times * 10000).astype(int)  # Assuming 10 kHz sample rate
             
+            print("Starting enhanced spike detection...")
+            
             # Step 1: Enhanced Spike Detection
             # To reduce false alarms and increase detection accuracy, 
             # we check that the next 'md' samples also cross the threshold.
@@ -468,6 +471,9 @@ class NeuralAnalysis:
                     # to reduce spike time detection error due to noise.
                     local_minimum = find_local_minimum(mua_data, ms)
                     confirmed_spikes.append(local_minimum)
+                    
+            print("Enhanced spike detection completed.")
+            print("Starting adaptive detection and statistical filtering...")
             
             # Step 2: Adaptive Detection
             # Extract waveforms around each spike for further analysis.
@@ -486,6 +492,8 @@ class NeuralAnalysis:
                 if avg_val <= 1 and std_val <= 3:
                     spike_waveforms.append(waveform)
                     
+            print("Adaptive detection and statistical filtering completed.")
+                    
             # Save the confirmed spikes and spike waveforms as structured NumPy arrays
             confirmed_spikes_array = np.zeros(len(confirmed_spikes), dtype=[('time', 'f8')])
             confirmed_spikes_array['time'] = np.array(confirmed_spikes) / 10000  # Convert back to time in seconds
@@ -498,6 +506,10 @@ class NeuralAnalysis:
             
             output_waveforms_path = os.path.join(os.path.dirname(mua_data_path), f"{os.path.basename(mua_data_path).replace('_MUA.npy', '_spike_waveforms.npy')}")
             np.save(output_waveforms_path, spike_waveforms_array)
+            
+            print(f"Data for recording {idx+1} saved. Moving to next recording...")
+            
+        print("Enhanced spike detection and filtering completed.")
                     
         
     def calculate_firingratesfor8HzLEDstim_and_plot_heatmap_for_specific_recording(self, recording_name, plot_heatmap=True):
