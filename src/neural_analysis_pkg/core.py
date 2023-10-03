@@ -465,7 +465,7 @@ class NeuralAnalysis:
             # Step 1: Enhanced Spike Detection
             # To reduce false alarms and increase detection accuracy, 
             # we check that the next 'md' samples also cross the threshold.
-            for ms in spike_indices:
+            for i, ms in spike_indices:
                 ch = spike_channels[i]
                 if all(mua_data[ms + mi] < 0 for mi in range(md)):
                     # Align spikes with the first local minimum after the threshold crossing
