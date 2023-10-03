@@ -515,19 +515,16 @@ class NeuralAnalysis:
                     
             print("Adaptive detection and statistical filtering completed.")
                     
-            # Convert the list of tuples to a NumPy array
-            confirmed_spikes_np_array = np.array(confirmed_spikes)
-            
-            # Extract the 'local_minimum' and 'channel' columns
-            local_minimums = confirmed_spikes_np_array[:, 0]
-            channels = confirmed_spikes_np_array[:, 1]
-            
-            # Create a structured array to store the confirmed spikes and channels
-            confirmed_spikes_array = np.zeros(len(local_minimums), dtype=[('time', 'f8'), ('channel', 'i4')])
-            
-            # Convert sample indices back to time in seconds and save
-            confirmed_spikes_array['time'] = local_minimums / 10000  # Convert back to time in seconds
-            confirmed_spikes_array['channel'] = channels  # Save channel information
+            # Save the confirmed spikes and spike waveforms as structured NumPy arrays
+            confirmed_spikes_array = np.zeros(len(confirmed_spikes), dtype=[('time', 'f8'), ('channel', 'i4')])
+            confirmed_spikes_array['time'] = np.array([x[0] for x in confirmed_spikes]) / 10000  # Convert back to time in seconds
+            confirmed_spikes_array['channel'] = np.array([x[1] for x in confirmed_spikes])
+
+            # Create a structured array for spike waveforms, including channel information
+            dtype_waveform = [('waveform', f'f8, {int(0.0005 * 10000) + int(0.001 * 10000)}'), ('channel', 'i4')]
+            spike_waveforms_array = np.zeros(len(spike_waveforms), dtype=dtype_waveform)
+            spike_waveforms_array['waveform'] = [x[0] for x in spike_waveforms]
+            spike_waveforms_array['channel'] = [x[1] for x in spike_waveforms]
 
             # Define output paths and save the arrays
             output_spikes_path = os.path.join(os.path.dirname(mua_data_path), f"{os.path.basename(mua_data_path).replace('_MUA.npy', '_confirmed_spikes.npy')}")
@@ -663,7 +660,7 @@ class NeuralAnalysis:
             spike_trains[ch, :] = np.histogram(spike_times_ch, bins=time_vector)[0]
         
         # Step 5: Create a Gaussian window
-        gaussian_window = create_gaussian_window(window_length=window_length, window_sd=window_sd, bin_size=bin_size)
+        gaussian_window = create_xgaussian_window(window_length=window_length, window_sd=window_sd, bin_size=bin_size)
         
         # Step 6: Convolve the spike train with the Gaussian window to estimate the instantaneous firing rate
         firing_rate_estimates = np.zeros_like(spike_trains)
