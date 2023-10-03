@@ -437,6 +437,69 @@ class NeuralAnalysis:
 
         print("Spike time extraction completed.")
         
+    def enhanced_spike_detection_and_filtering(self, md=10):
+        # Initialize lists to store the confirmed spikes and their waveforms
+        confirmed_spikes = []
+        spike_waveforms = []
+        
+        # Iterating through each recording
+        for idx, row in self.recording_results_df.iterrows():
+            # Load the MUA data
+            mua_data_path = row['mua_data_path']
+            mua_data = np.load(mua_data_path)
+            
+            # Load the spike data from the structured array
+            spike_data_path = os.path.join(os.path.dirname(mua_data_path), f"{os.path.basename(mua_data_path).replace('_MUA.npy', '_spike_times.npy')}")
+            spike_data = np.load(spike_data_path)
+            
+            # Extract spike_times and spike_channels from the structured array
+            spike_times = spike_data['time']
+            spike_channels = spike_data['channel']
+            
+            # Convert spike times back to indices
+            spike_indices = (spike_times * 10000).astype(int)  # Assuming 10 kHz sample rate
+            
+            # Step 1: Enhanced Spike Detection
+            # To reduce false alarms and increase detection accuracy, 
+            # we check that the next 'md' samples also cross the threshold.
+            for ms in spike_indices:
+                if all(mua_data[ms + mi] < -3 * noise_std_estimate for mi in range(md)):
+                    # Align spikes with the first local minimum after the threshold crossing
+                    # to reduce spike time detection error due to noise.
+                    local_minimum = find_local_minimum(mua_data, ms)
+                    confirmed_spikes.append(local_minimum)
+            
+            # Step 2: Adaptive Detection
+            # Extract waveforms around each spike for further analysis.
+            # Capture 0.5 ms before and 1 ms after the spike.
+            for spike in confirmed_spikes:
+                waveform = mua_data[spike - int(0.0005 * 10000): spike + int(0.001 * 10000)]  # Assuming 10 kHz sample rate
+                
+                # Step 3: Statistical Filtering
+                # Filter out false positives based on waveform characteristics.
+                # Specifically, we look at the absolute mean and standard deviation (std) of the waveform.
+                avg_val = np.abs(np.mean(waveform))
+                std_val = np.std(waveform)
+                
+                # Falsely detected spikes usually have high std and their mean is far from zero.
+                # Therefore, we filter out spikes that don't meet these criteria.
+                if avg_val <= 1 and std_val <= 3:
+                    spike_waveforms.append(waveform)
+                    
+            # Save the confirmed spikes and spike waveforms as structured NumPy arrays
+            confirmed_spikes_array = np.zeros(len(confirmed_spikes), dtype=[('time', 'f8')])
+            confirmed_spikes_array['time'] = np.array(confirmed_spikes) / 10000  # Convert back to time in seconds
+            
+            spike_waveforms_array = np.array(spike_waveforms)  # Assuming all waveforms have the same length
+            
+            # Define output paths and save the arrays
+            output_spikes_path = os.path.join(os.path.dirname(mua_data_path), f"{os.path.basename(mua_data_path).replace('_MUA.npy', '_confirmed_spikes.npy')}")
+            np.save(output_spikes_path, confirmed_spikes_array)
+            
+            output_waveforms_path = os.path.join(os.path.dirname(mua_data_path), f"{os.path.basename(mua_data_path).replace('_MUA.npy', '_spike_waveforms.npy')}")
+            np.save(output_waveforms_path, spike_waveforms_array)
+                    
+        
     def calculate_firingratesfor8HzLEDstim_and_plot_heatmap_for_specific_recording(self, recording_name, plot_heatmap=True):
         """
         Calculate firing rates for 8Hz LED stimulation and optionally plot a heatmap for a specific recording.
@@ -1233,3 +1296,17 @@ def bootstrap_ci(data, n_bootstraps=1000, ci=0.99):
     upper = np.percentile(bootstrapped_means, (1+ci)/2 * 100)
     
     return lower, upper
+
+# Helper function to find the first local minimum in the data within a search window.
+# The local minimum is used to accurately align the detected spikes.
+# 
+# Parameters:
+# - data: Array of MUA data
+# - start_idx: Starting index for the search
+# - search_window: Number of samples to consider in the search, default is 10
+#
+# Returns:
+# - Index of the first local minimum within the search window, corrected to be relative to the original data array.
+def find_local_minimum(data, start_idx, search_window=10):
+    return np.argmin(data[start_idx:start_idx + search_window]) + start_idx
+
