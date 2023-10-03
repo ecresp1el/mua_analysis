@@ -457,7 +457,7 @@ class NeuralAnalysis:
             spike_times = spike_data['time']
             spike_channels = spike_data['channel']
             
-            # Convert spike times back to indices
+            #  Convert the spike times to sample indices, assuming a 10 kHz sample rate.
             spike_indices = (spike_times * 10000).astype(int)  # Assuming 10 kHz sample rate
             
             print("Starting enhanced spike detection...")
@@ -465,14 +465,24 @@ class NeuralAnalysis:
             # Step 1: Enhanced Spike Detection
             # To reduce false alarms and increase detection accuracy, 
             # we check that the next 'md' samples also cross the threshold.
-            for i, ms in spike_indices:
+            
+            # Enhanced Spike Detection:
+            # Loop through each spike index. 
+            # 'i' is the index in the list, 'ms' is the sample index in the data.
+            for i, ms in enumerate(spike_indices):
+                # Get the corresponding channel for this spike.
                 ch = spike_channels[i]
-                if all(mua_data[ms + mi] < 0 for mi in range(md)):
-                    # Align spikes with the first local minimum after the threshold crossing
-                    # to reduce spike time detection error due to noise.
+                
+                # Check the next 'md' samples to confirm this is a spike.
+                # If all the samples in the window are below zero, it confirms the event as a spike.
+                if all(mua_data[ms + mi, ch] < 0 for mi in range(md)):
+                    # Find the local minimum sample around the spike time to better align it.
+                    # This minimizes error in spike time detection due to noise.
                     local_minimum = find_local_minimum(mua_data[:, ch], ms)
-                    confirmed_spikes.append((local_minimum, ch))
                     
+                    # Append the local minimum and the channel to the list of confirmed spikes.
+                    confirmed_spikes.append((local_minimum, ch))
+                
             print("Enhanced spike detection completed.")
             print("Starting adaptive detection and statistical filtering...")
             
