@@ -466,11 +466,12 @@ class NeuralAnalysis:
             # To reduce false alarms and increase detection accuracy, 
             # we check that the next 'md' samples also cross the threshold.
             for ms in spike_indices:
-                if all(mua_data[ms + mi] < -3 * noise_std_estimate for mi in range(md)):
+                ch = spike_channels[i]
+                if all(mua_data[ms + mi] < 0 for mi in range(md)):
                     # Align spikes with the first local minimum after the threshold crossing
                     # to reduce spike time detection error due to noise.
-                    local_minimum = find_local_minimum(mua_data, ms)
-                    confirmed_spikes.append(local_minimum)
+                    local_minimum = find_local_minimum(mua_data[:, ch], ms)
+                    confirmed_spikes.append((local_minimum, ch))
                     
             print("Enhanced spike detection completed.")
             print("Starting adaptive detection and statistical filtering...")
