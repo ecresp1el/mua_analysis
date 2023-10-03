@@ -489,8 +489,14 @@ class NeuralAnalysis:
             # Step 2: Adaptive Detection
             # Extract waveforms around each spike for further analysis.
             # Capture 0.5 ms before and 1 ms after the spike.
-            for spike in confirmed_spikes:
-                waveform = mua_data[spike - int(0.0005 * 10000): spike + int(0.001 * 10000)]  # Assuming 10 kHz sample rate
+            
+            # Loop through each confirmed spike, which is stored as a tuple (local_minimum, channel).
+            for local_minimum, ch in confirmed_spikes:
+                
+                # Extract waveforms around each confirmed spike for further analysis.
+                # Capture 0.5 ms before and 1 ms after the spike.
+                # Note: We are using the channel index 'ch' here to get the correct slice of data.
+                waveform = mua_data[local_minimum - int(0.0005 * 10000): local_minimum + int(0.001 * 10000), ch]  # Assuming 10 kHz sample rate
                 
                 # Step 3: Statistical Filtering
                 # Filter out false positives based on waveform characteristics.
