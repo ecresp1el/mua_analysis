@@ -486,9 +486,13 @@ class NeuralAnalysis:
             print("Enhanced spike detection completed.")
             print("Starting adaptive detection and statistical filtering...")
             
+
+
+            
             # Step 2: Adaptive Detection
             # Extract waveforms around each spike for further analysis.
             # Capture 0.5 ms before and 1 ms after the spike.
+            
             
             # Loop through each confirmed spike, which is stored as a tuple (local_minimum, channel).
             for local_minimum, ch in confirmed_spikes:
@@ -511,16 +515,25 @@ class NeuralAnalysis:
                     
             print("Adaptive detection and statistical filtering completed.")
                     
-            # Save the confirmed spikes and spike waveforms as structured NumPy arrays
-            confirmed_spikes_array = np.zeros(len(confirmed_spikes), dtype=[('time', 'f8')])
-            confirmed_spikes_array['time'] = np.array(confirmed_spikes) / 10000  # Convert back to time in seconds
+            # Convert the list of tuples to a NumPy array
+            confirmed_spikes_np_array = np.array(confirmed_spikes)
             
-            spike_waveforms_array = np.array(spike_waveforms)  # Assuming all waveforms have the same length
+            # Extract the 'local_minimum' and 'channel' columns
+            local_minimums = confirmed_spikes_np_array[:, 0]
+            channels = confirmed_spikes_np_array[:, 1]
             
+            # Create a structured array to store the confirmed spikes and channels
+            confirmed_spikes_array = np.zeros(len(local_minimums), dtype=[('time', 'f8'), ('channel', 'i4')])
+            
+            # Convert sample indices back to time in seconds and save
+            confirmed_spikes_array['time'] = local_minimums / 10000  # Convert back to time in seconds
+            confirmed_spikes_array['channel'] = channels  # Save channel information
+
             # Define output paths and save the arrays
             output_spikes_path = os.path.join(os.path.dirname(mua_data_path), f"{os.path.basename(mua_data_path).replace('_MUA.npy', '_confirmed_spikes.npy')}")
             np.save(output_spikes_path, confirmed_spikes_array)
             
+            spike_waveforms_array = np.array(spike_waveforms)
             output_waveforms_path = os.path.join(os.path.dirname(mua_data_path), f"{os.path.basename(mua_data_path).replace('_MUA.npy', '_spike_waveforms.npy')}")
             np.save(output_waveforms_path, spike_waveforms_array)
             
