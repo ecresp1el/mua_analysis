@@ -1212,8 +1212,6 @@ class NeuralAnalysis:
             # Construct the analog_path by appending 'AnalogSignal' to the parent directory
             analog_path = os.path.join(parent_directory, 'AnalogSignal')
             
-            
-            
             # List all .dat files in the AnalogSignal folder
             dat_files = glob.glob(os.path.join(analog_path, '*.dat'))
 
@@ -1265,13 +1263,8 @@ class NeuralAnalysis:
                 # Extract the portion of the analog signal corresponding to the current time window
                 epoch_analog_signal = analog_signal[start_idx:end_idx][:1500]/4 # Divide by 4 to scale the analog signal of 0.25 per bit per blackrick
                 
-                # Update sum_analog_signal
-                sum_analog_signal += epoch_analog_signal  
-                
                 if i < 20:  # Only save the first 20 stim analog signals
-                    individual_stim_analog_signals.append(epoch_analog_signal)
-                
-                              
+                    individual_stim_analog_signals.append(epoch_analog_signal)        
         
             # Calculate the mean PSTH by dividing the sum by the count
             mean_psth = np.divide(sum_psth, count_psth, where=(count_psth!=0))
@@ -1279,8 +1272,6 @@ class NeuralAnalysis:
             # Convert firing rate from spikes per bin to spikes per second (Hz)
             mean_psth /= bin_size
 
-            # New: Calculate the mean analog signal by dividing by the number of trials
-            mean_analog_signal = sum_analog_signal / len(stim_data)
             
             # Create a time axis that spans from -500 ms to +1000 ms
             time_axis = np.linspace(-500, 1000, num_bins)
@@ -1311,8 +1302,7 @@ class NeuralAnalysis:
                 for analog_sig in individual_stim_analog_signals: # Plot each individual stim analog signal as a black line
                             ax2.plot(time_axis, analog_sig, 'k-', alpha=0.5)  # Plot as black lines with some transparency
                 
-                ax2.plot(time_axis, mean_analog_signal, 'g-', label='Mean Analog Signal')
-                ax2.set_ylabel('Analog Signal Value', color='g')
+                ax2.set_ylabel('Analog Signal Value', color='k')
                 ax2.tick_params(axis='y', labelcolor='g')
                 ax2.legend(loc='upper right')
                 
