@@ -1260,7 +1260,7 @@ class NeuralAnalysis:
                 end_idx = int((onset + 1.0) * 10000)
                 
                 # Extract the portion of the analog signal corresponding to the current time window
-                epoch_analog_signal = analog_signal[start_idx:end_idx][:1500]
+                epoch_analog_signal = analog_signal[start_idx:end_idx][:1500]/4 # Divide by 4 to scale the analog signal of 0.25 per bit per blackrick
                 
                 # Update sum_analog_signal
                 sum_analog_signal += epoch_analog_signal                
