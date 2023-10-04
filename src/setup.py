@@ -9,7 +9,7 @@ subprocess.run(["python", kernel_script_path])
 
 setup(
     name="neural_analysis_pkg",
-    version="0.1.0",  # Start with a development version
+    version="0.1.1",  
     author="Emmanuel Crespo",
     author_email="cresp1el@cmich.edu",
     description="A package for neural analysis based on extracellular recordings",
