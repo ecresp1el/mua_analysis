@@ -24,7 +24,7 @@ class NeuralAnalysis:
         # Try to load the existing recording_results_df from a CSV file
         self.recording_results_df = self._load_recording_results_df()
         
-    def process_ns6_files(self, project_folder_path):
+    def process_ns6_files(self, project_folder_path, target_channel=33):
         """
         Iteratively process .ns6 files in the project folder.
         """
@@ -53,7 +53,7 @@ class NeuralAnalysis:
                                 ns6_file_path = os.path.join(recording_path, file_name)
                                 
                                 # Read and downsample a specific channel (e.g., channel 1) from the .ns6 file
-                                downsampled_data = self.read_and_downsample_ns6_channel(ns6_file_path, 1)
+                                downsampled_data = self.read_and_downsample_ns6_channel(ns6_file_path, target_channel)
                                 
                                 # Save the downsampled data as a .dat file
                                 dat_file_name = f"{file_name.split('.')[0]}_analog_downsampled.dat"
@@ -64,10 +64,18 @@ class NeuralAnalysis:
         """
         Read a specific channel from a .ns6 file and downsample it from 30 kHz to 10 kHz.
         """
-        
         nsx_file = brpylib.NsxFile(ns6_file_path)
-        channel_data = nsx_file.getdata(elec_ids=[target_channel])[0]['data']
+        all_data = nsx_file.read()
         nsx_file.close()
+
+        # Translate the user-specified channel to the correct index
+        if target_channel in [33, 34, 35]:
+            channel_index = target_channel - 1  # Python uses 0-based indexing
+        else:
+            raise ValueError("Invalid target channel. Choose from 33, 34, or 35.")
+
+        # Extract data for the specific channel
+        channel_data = all_data['data'][0][channel_index, :]
 
         # Downsampling from 30 kHz to 10 kHz
         downsampled_data = channel_data[::3]
