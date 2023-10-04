@@ -1222,7 +1222,7 @@ class NeuralAnalysis:
 
             # Use the first (and only) .dat file found
             analog_file_path = dat_files[0]
-            analog_signal = np.fromfile(analog_file_path, dtype=np.int16)  # Adjust dtype if necessary
+            analog_signal = np.fromfile(analog_file_path, dtype=np.float32) # Load the analog signal
             
             # New: Initialize an array to store the sum of the analog signals during each stimulus epoch
             sum_analog_signal = np.zeros(1500)  # Initialize with zeros
