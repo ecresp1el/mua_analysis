@@ -1298,10 +1298,12 @@ class NeuralAnalysis:
                 ax.axvline(x=500, color='r', linestyle='--')  # Mark stimulus offset
                 
                 # New: Overlay the mean analog signal on the PSTH plot
-                ax2 = ax.twinx()  # Create a second y-axis
-                for analog_sig in individual_stim_analog_signals: # Plot each individual stim analog signal as a black line
-                            ax2.plot(time_axis, analog_sig, 'k-', alpha=0.5)  # Plot as black lines with some transparency
-                
+                ax2 = ax.twinx()  # Create a second y-axis that shares the same x-axis
+                for j, analog_sig in enumerate(individual_stim_analog_signals):
+                    if j == 0:  # Add a label only for the first line to avoid duplicating the legend entry
+                        ax2.plot(time_axis, analog_sig, 'k-', alpha=0.5, label='Individual Stim')
+                    else:
+                        ax2.plot(time_axis, analog_sig, 'k-', alpha=0.5)  # Plot as black lines with some transparency
                 ax2.set_ylabel('Analog Signal Value', color='k')
                 ax2.tick_params(axis='y', labelcolor='g')
                 ax2.legend(loc='upper right')
