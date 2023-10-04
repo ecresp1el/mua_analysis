@@ -1199,7 +1199,7 @@ class NeuralAnalysis:
             # Step 2 & 3: Aggregate the PSTH data
             # New step: Load the analog signal
             analog_path = os.path.join('/home/cresp1el-local/Documents/MATLAB/Data/lmc_project_v2/LED/SpikeStuff', recording_name, 'AnalogSignal')
-            analog_file_path = os.path.join(analog_path, f'{recording_name}_analog_downsampled.dat')
+            analog_file_path = os.path.join(analog_path, f'{recording_name}_opto_analog_downsampled.dat') #speicfy the path to the analog signal of the recording for led onluy
             analog_signal = np.fromfile(analog_file_path, dtype=np.int16)  # Adjust dtype if necessary
             
             # New: Initialize an array to store the sum of the analog signals during each stimulus epoch
