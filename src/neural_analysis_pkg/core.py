@@ -7,6 +7,7 @@ import gc
 import pandas as pd 
 import matplotlib.pyplot as plt
 import brpylib
+import glob
 class NeuralAnalysis:
     """ 
     Initializes new objects created from the NeuralAnalysis class. It is at the class level within your core.py file.
@@ -1199,7 +1200,15 @@ class NeuralAnalysis:
             # Step 2 & 3: Aggregate the PSTH data
             # New step: Load the analog signal
             analog_path = os.path.join('/home/cresp1el-local/Documents/MATLAB/Data/lmc_project_v2/LED/SpikeStuff', recording_name, 'AnalogSignal')
-            analog_file_path = os.path.join(analog_path, f'{recording_name}_opto_analog_downsampled.dat') #speicfy the path to the analog signal of the recording for led onluy
+            # List all .dat files in the AnalogSignal folder
+            dat_files = glob.glob(os.path.join(analog_path, '*.dat'))
+
+            # Check if there is exactly one .dat file
+            if len(dat_files) != 1:
+                raise Exception("Expected exactly one .dat file in the AnalogSignal folder, but found {}".format(len(dat_files)))
+
+            # Use the first (and only) .dat file found
+            analog_file_path = dat_files[0]
             analog_signal = np.fromfile(analog_file_path, dtype=np.int16)  # Adjust dtype if necessary
             
             # New: Initialize an array to store the sum of the analog signals during each stimulus epoch
