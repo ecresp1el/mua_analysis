@@ -1149,6 +1149,143 @@ class NeuralAnalysis:
 
         plt.show()
         
+    def calculate_psth_and_plot_with_analog_signal(self, recording_name, firing_rate_estimates, stim_id=8, bin_size=0.001):
+            """
+            Calculate the Peri-Stimulus Time Histogram (PSTH) for a given recording. This method will then plot 
+            the PSTH for each channel for all trials where stim_id is equal to the specified value in addition to the analog signal. 
+            
+            Parameters
+            ----------
+            recording_name : str
+                The name of the recording to process.
+            firing_rate_estimates : ndarray
+                A 2D array where each row represents a channel and each column represents a time bin.
+                This is produced by the `estimate_instantaneous_firing_rate_for_specific_recording` method.
+            stim_id : int, optional
+                The ID of the stimulus to analyze. Default is 8 which is for 8Hz LED STIM. Can be switcthed for 1,2,3 or 4 for other stimulations.
+            bin_size : float, optional
+                The bin size for discretizing the spike times, in seconds. Default is 0.001.
+            
+            Notes
+            -----
+            This method uses the attributes `self.recording_results_df`, `self.stimulation_data_df`, and `self.n_channels`
+            to access the necessary data. The `firing_rate_estimates` parameter should be produced by the
+            `estimate_instantaneous_firing_rate_for_specific_recording` method.
+            
+            Returns
+            -------
+            PSTH plots with analog signal overlaid on top
+            """
+            
+            # Step 1: Identify the time windows for the specified stimulus_id
+            stim_data = self.stimulation_data_df[
+                (self.stimulation_data_df['recording_name'] == recording_name) & 
+                (self.stimulation_data_df['stimulation_ids'] == stim_id)
+            ]
+            
+            # Get good and noisy channels for the current recording
+            good_channels = self.recording_results_df.loc[
+                self.recording_results_df['recording_name'] == recording_name, 
+                'good_channels'
+            ].values[0]
+            noisy_channels = self.recording_results_df.loc[
+                self.recording_results_df['recording_name'] == recording_name, 
+                'noisy_channels'
+            ].values[0]
+
+            # Exclude noisy channels from good channels
+            good_channels = [ch for ch in good_channels if ch not in noisy_channels]
+
+            # Step 2 & 3: Aggregate the PSTH data
+            # New step: Load the analog signal
+            analog_path = os.path.join('/home/cresp1el-local/Documents/MATLAB/Data/lmc_project_v2/LED/SpikeStuff', recording_name, 'AnalogSignal')
+            analog_file_path = os.path.join(analog_path, f'{recording_name}_analog_downsampled.dat')
+            analog_signal = np.fromfile(analog_file_path, dtype=np.int16)  # Adjust dtype if necessary
+            
+            # New: Initialize an array to store the sum of the analog signals during each stimulus epoch
+            sum_analog_signal = np.zeros(1500)  # Initialize with zeros
+            
+            psth_duration_in_s = 1.5  # PSTH duration in seconds (1500 ms)
+            num_bins = int(psth_duration_in_s / bin_size)
+            sum_psth = np.zeros((self.n_channels, num_bins))  # Initialize with zeros
+            count_psth = np.zeros((self.n_channels, num_bins))  # Initialize with zeros
+
+            for i, (onset, offset) in enumerate(zip(stim_data['onset_times'], stim_data['offset_times'])):
+                for ch in good_channels:
+                    # Find the bins corresponding to the current time window (from -500ms to +1000ms relative to the onset)
+                    start_bin = int((onset - 0.5) / bin_size)
+                    end_bin = int((onset + 1.0) / bin_size)
+                    
+                    # within your loop where you extract trial_psth
+                    trial_psth = firing_rate_estimates[ch, start_bin:end_bin][:1500]
+                    
+                    #accumulate the sum and update the count in the relevant bins
+                    try: 
+                        sum_psth[ch, :] += np.nan_to_num(trial_psth)
+                        count_psth[ch, :] += np.isfinite(trial_psth)
+                    except ValueError: 
+                        # If lengths are mismatched, extend trial_psth with its last value
+                        if len(trial_psth) == len(sum_psth[ch, :]) - 1:
+                            trial_psth = np.append(trial_psth, trial_psth[-1])
+                            sum_psth[ch, :] += np.nan_to_num(trial_psth)
+                            count_psth[ch, :] += np.isfinite(trial_psth)
+                        else:
+                            print("Unexpected mismatch in lengths")
+                    
+                # New: Update sum_analog_signal using the onset and offset times
+                # Convert onset and offset times from seconds to indices for 10 kHz data
+                start_idx = int((onset - 0.5) * 10000)
+                end_idx = int((onset + 1.0) * 10000)
+                
+                # Extract the portion of the analog signal corresponding to the current time window
+                epoch_analog_signal = analog_signal[start_idx:end_idx][:1500]
+                
+                # Update sum_analog_signal
+                sum_analog_signal += epoch_analog_signal                
+        
+            # Calculate the mean PSTH by dividing the sum by the count
+            mean_psth = np.divide(sum_psth, count_psth, where=(count_psth!=0))
+            
+            # Convert firing rate from spikes per bin to spikes per second (Hz)
+            mean_psth /= bin_size
+
+            # New: Calculate the mean analog signal by dividing by the number of trials
+            mean_analog_signal = sum_analog_signal / len(stim_data)
+            
+            # Create a time axis that spans from -500 ms to +1000 ms
+            time_axis = np.linspace(-500, 1000, num_bins)
+
+            # Step 4: Plotting the mean PSTH for each channel
+            n_rows = 8  # Number of rows in the grid
+            n_cols = 4  # Number of columns in the grid
+
+            fig, axes = plt.subplots(n_rows, n_cols, figsize=(20, 40))  # Adjust the figure size
+            fig.subplots_adjust(hspace=0.4, wspace=0.4)  # Adjust the spacing between subplots
+            
+            # Add a title for the entire figure
+            fig.suptitle(f'Recording: {recording_name}', fontsize=24, y=0.90)  # Adjust y-coordinate of the title relative to the figure height (1.0)
+            
+            for i, ax in enumerate(axes.flatten()):
+                if i >= self.n_channels:
+                    ax.axis('off')  # Turn off axes for empty subplots
+                    continue
+                ax.plot(time_axis, mean_psth[i, :])
+                ax.set_xlabel('Time (ms)')
+                ax.set_ylabel('Firing Rate (Hz)')
+                ax.set_title(f'Channel {i+1}')
+                ax.axvline(x=0, color='r', linestyle='--')  # Mark stimulus onset
+                ax.axvline(x=500, color='r', linestyle='--')  # Mark stimulus offset
+                
+                # New: Overlay the mean analog signal on the PSTH plot
+                ax2 = ax.twinx()  # Create a second y-axis
+                ax2.plot(time_axis, mean_analog_signal, 'g-', label='Mean Analog Signal')
+                ax2.set_ylabel('Analog Signal Value', color='g')
+                ax2.tick_params(axis='y', labelcolor='g')
+                ax2.legend(loc='upper right')
+                
+
+            plt.show()
+        
     def calculate_psth_pre_post_and_plot_allgoodchannels(self, recording_name, firing_rate_estimates, base_dir, bin_size=0.001, pre_trials=30, post_trials=30, zoom_in=False):
         """
         Calculate and plot the Peri-Stimulus Time Histogram (PSTH) for both pre and post epochs for all good and noisy channels.
