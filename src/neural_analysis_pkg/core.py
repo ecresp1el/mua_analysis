@@ -1198,8 +1198,21 @@ class NeuralAnalysis:
             good_channels = [ch for ch in good_channels if ch not in noisy_channels]
 
             # Step 2 & 3: Aggregate the PSTH data
+            
             # New step: Load the analog signal
-            analog_path = os.path.join('/home/cresp1el-local/Documents/MATLAB/Data/lmc_project_v2/LED/SpikeStuff', recording_name, 'AnalogSignal')
+            # Get the downsampled_path for the current recording_name from the DataFrame
+            downsampled_path = self.recording_results_df.loc[
+                self.recording_results_df['recording_name'] == recording_name, 
+                'downsampled_path'
+            ].values[0]
+
+            # Extract the parent directory from the downsampled_path
+            parent_directory = os.path.dirname(downsampled_path)
+
+            # Construct the analog_path by appending 'AnalogSignal' to the parent directory
+            analog_path = os.path.join(parent_directory, 'AnalogSignal')
+            
+            
             # List all .dat files in the AnalogSignal folder
             dat_files = glob.glob(os.path.join(analog_path, '*.dat'))
 
