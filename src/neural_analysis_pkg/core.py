@@ -6,6 +6,7 @@ from time import time
 import gc 
 import pandas as pd 
 import matplotlib.pyplot as plt
+import brpylib
 class NeuralAnalysis:
     """ 
     Initializes new objects created from the NeuralAnalysis class. It is at the class level within your core.py file.
@@ -22,6 +23,57 @@ class NeuralAnalysis:
         
         # Try to load the existing recording_results_df from a CSV file
         self.recording_results_df = self._load_recording_results_df()
+        
+    def process_ns6_files(self, project_folder_path):
+        """
+        Iteratively process .ns6 files in the project folder.
+        """
+        
+        spikestuff_path = os.path.join(project_folder_path, "SpikeStuff")
+        total_groups = sum(1 for item in os.listdir(spikestuff_path) if os.path.isdir(os.path.join(spikestuff_path, item)))
+        
+        for group_index, group_name in enumerate(os.listdir(spikestuff_path)):
+            group_path = os.path.join(spikestuff_path, group_name)
+            
+            if os.path.isdir(group_path):
+                for recording_index, recording_name in enumerate(os.listdir(group_path)):
+                    recording_path = os.path.join(group_path, recording_name)
+                    
+                    if os.path.isdir(recording_path):
+                        # Define the path to the 'AnalogSignal' folder within the current recording folder
+                        analog_signal_path = os.path.join(recording_path, 'AnalogSignal')
+                        
+                        # Create the 'AnalogSignal' directory if it doesn't exist
+                        if not os.path.exists(analog_signal_path):
+                            os.makedirs(analog_signal_path)
+                        
+                        # Loop through all files in the recording folder to find .ns6 files
+                        for file_name in os.listdir(recording_path):
+                            if file_name.endswith(".ns6"):
+                                ns6_file_path = os.path.join(recording_path, file_name)
+                                
+                                # Read and downsample a specific channel (e.g., channel 1) from the .ns6 file
+                                downsampled_data = self.read_and_downsample_ns6_channel(ns6_file_path, 1)
+                                
+                                # Save the downsampled data as a .dat file
+                                dat_file_name = f"{file_name.split('.')[0]}_analog_downsampled.dat"
+                                dat_file_path = os.path.join(analog_signal_path, dat_file_name)
+                                downsampled_data.astype('float32').tofile(dat_file_path)
+                                
+    def read_and_downsample_ns6_channel(self, ns6_file_path, target_channel):
+        """
+        Read a specific channel from a .ns6 file and downsample it from 30 kHz to 10 kHz.
+        """
+        
+        nsx_file = brpylib.NsxFile(ns6_file_path)
+        nsx_file.open()
+        channel_data = nsx_file.getdata(elec_ids=[target_channel])[0]['data']
+        nsx_file.close()
+
+        # Downsampling from 30 kHz to 10 kHz
+        downsampled_data = channel_data[::3]
+
+        return downsampled_data                               
         
     def _load_recording_results_df(self):
         """

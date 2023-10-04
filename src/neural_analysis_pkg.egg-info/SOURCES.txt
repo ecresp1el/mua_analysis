@@ -1,5 +1,8 @@
 README.md
 setup.py
+brpylib/__init__.py
+brpylib/brMiscFxns.py
+brpylib/brpylib.py
 neural_analysis_pkg/__init__.py
 neural_analysis_pkg/core.py
 neural_analysis_pkg.egg-info/PKG-INFO

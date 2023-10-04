@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: neural-analysis-pkg
-Version: 0.1.0
+Version: 0.1.1
 Summary: A package for neural analysis based on extracellular recordings
 Home-page: https://github.com/ecresp1el/mua_analysis
 Author: Emmanuel Crespo
