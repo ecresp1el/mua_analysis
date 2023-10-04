@@ -483,6 +483,11 @@ class NeuralAnalysis:
         # Iterating through each recording
         for idx, row in self.recording_results_df.iterrows():
             print(f"Processing recording {idx+1}/{len(self.recording_results_df)}...")
+            
+            #reinitialize the lists to store the confirmed spikes and their waveforms for each recording after processing each recording
+            confirmed_spikes = []
+            spike_waveforms = []
+            
             # Load the MUA data
             mua_data_path = row['mua_data_path']
             mua_data = np.load(mua_data_path)
