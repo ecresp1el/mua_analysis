@@ -66,7 +66,6 @@ class NeuralAnalysis:
         """
         
         nsx_file = brpylib.NsxFile(ns6_file_path)
-        nsx_file.open()
         channel_data = nsx_file.getdata(elec_ids=[target_channel])[0]['data']
         nsx_file.close()
 
