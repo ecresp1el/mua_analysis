@@ -65,7 +65,7 @@ class NeuralAnalysis:
         Read a specific channel from a .ns6 file and downsample it from 30 kHz to 10 kHz.
         """
         nsx_file = brpylib.NsxFile(ns6_file_path)
-        all_data = nsx_file.read()
+        all_data = nsx_file.getdata()
         nsx_file.close()
 
         # Translate the user-specified channel to the correct index
