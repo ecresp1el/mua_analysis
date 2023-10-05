@@ -1262,7 +1262,7 @@ class NeuralAnalysis:
         
                 
                 # Extract the portion of the analog signal corresponding to the current time window
-                epoch_analog_signal = analog_signal[start_idx:end_idx][:1500]/4 # Divide by 4 to scale the analog signal of 0.25 per bit per blackrick
+                epoch_analog_signal = analog_signal[start_idx:end_idx]/4 # Divide by 4 to scale the analog signal of 0.25 per bit per blackrick
                 
                 if i < 1:  # Only save the first 20 stim analog signals
                     resampled_epoch_analog_signal = resample_analog_signal(epoch_analog_signal)
