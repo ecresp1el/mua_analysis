@@ -1258,7 +1258,7 @@ class NeuralAnalysis:
                 # New: Update sum_analog_signal using the onset and offset times
                 # Convert onset and offset times from seconds to indices for 10 kHz data
                 start_idx = int((onset - 0.5) * 10000)
-                end_idx = int((onset + 1.0) * 10000)
+                end_idx = int((offset + 0.5) * 10000) 
                 
                 # Extract the portion of the analog signal corresponding to the current time window
                 epoch_analog_signal = analog_signal[start_idx:end_idx][:1500]/4 # Divide by 4 to scale the analog signal of 0.25 per bit per blackrick
