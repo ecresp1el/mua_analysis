@@ -1265,7 +1265,6 @@ class NeuralAnalysis:
                 
                 if i < 1:  # Only save the first 20 stim analog signals
                     individual_stim_analog_signals.append(epoch_analog_signal) 
-                    break # Break out of the loop after saving the first x stim analog signals       
         
             # Calculate the mean PSTH by dividing the sum by the count
             mean_psth = np.divide(sum_psth, count_psth, where=(count_psth!=0))
