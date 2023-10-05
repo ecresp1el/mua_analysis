@@ -578,7 +578,7 @@ class NeuralAnalysis:
             # Loop through each spike index. 
             # 'i' is the index in the list, 'ms' is the sample index in the data.
             for i, ms in enumerate(spike_indices):
-                print(f"Checking spike at index {ms}...")
+                # print(f"Checking spike at index {ms}...")
                 # Get the corresponding channel for this spike.
                 ch = spike_channels[i]
                 
@@ -601,14 +601,14 @@ class NeuralAnalysis:
                     If this number is smaller than refractory_period, then the candidate spike is rejected, and the loop moves to the next iteration.
                 """
                 if ms - last_spike_time < refractory_period:
-                    print(f"Spike at index {ms} is within refractory period. Skipping.")
+                    # print(f"Spike at index {ms} is within refractory period. Skipping.")
                     continue  # Skip this spike, it's too close to the last one
                 
                 
                 # Check the next 'md' samples to confirm this is a spike.
                 # If all the samples in the window are below zero, it confirms the event as a spike.
                 if all(mua_data[ms + mi, ch] < 0 for mi in range(md)):
-                    print(f"Spike at index {ms} is confirmed.")
+                    # print(f"Spike at index {ms} is confirmed.")
                     # Find the local minimum sample around the spike time to better align it.
                     # This minimizes error in spike time detection due to noise.
                     local_minimum = find_local_minimum(mua_data[:, ch], ms)
@@ -625,8 +625,7 @@ class NeuralAnalysis:
                     """
                     last_spike_time = ms  # Update the time of the last confirmed spike
             
-            print(f"Number of confirmed spikes: {len(confirmed_spikes)}")
-                
+            print(f"Number of confirmed spikes after enhanced detection: {len(confirmed_spikes)}")
             print("Enhanced spike detection completed.")
             print("Starting adaptive detection and statistical filtering...")
             
@@ -651,8 +650,8 @@ class NeuralAnalysis:
                 # Therefore, we filter out spikes that don't meet these criteria.
                 if avg_val <= 1 and std_val <= 3:
                     spike_waveforms.append(waveform)
-            
-            print(f"Number of spikes after adaptive detection and filtering: {len(spike_waveforms)}")                    
+        
+            print(f"Number of spikes after adaptive detection and statistical filtering: {len(spike_waveforms)}")            
             print("Adaptive detection and statistical filtering completed.")
                     
             # Save the confirmed spikes and spike waveforms as structured NumPy arrays
@@ -672,7 +671,7 @@ class NeuralAnalysis:
             
             
             print(f"About to save {len(confirmed_spikes_array)} confirmed spikes and {len(spike_waveforms_array)} waveforms for recording {idx+1}.")
-
+        
             # Define output paths and save the arrays
             output_spikes_path = os.path.join(os.path.dirname(mua_data_path), f"{os.path.basename(mua_data_path).replace('_MUA.npy', '_confirmed_spikes.npy')}")
             np.save(output_spikes_path, confirmed_spikes_array)
