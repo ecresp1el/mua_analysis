@@ -1223,9 +1223,6 @@ class NeuralAnalysis:
             analog_file_path = dat_files[0]
             analog_signal = np.fromfile(analog_file_path, dtype=np.float32) # Load the analog signal
             
-            # New: Initialize an array to store the sum of the analog signals during each stimulus epoch
-            sum_analog_signal = np.zeros(1500)  # Initialize with zeros
-            
             individual_stim_analog_signals = []  # List to hold individual stim analog signals for first 20 stims
             
             psth_duration_in_s = 1.5  # PSTH duration in seconds (1500 ms)
@@ -1233,7 +1230,10 @@ class NeuralAnalysis:
             sum_psth = np.zeros((self.n_channels, num_bins))  # Initialize with zeros
             count_psth = np.zeros((self.n_channels, num_bins))  # Initialize with zeros
 
+            print(f"Length of stim_data: {len(stim_data)}") 
+            
             for i, (onset, offset) in enumerate(zip(stim_data['onset_times'], stim_data['offset_times'])):
+                print(f"Inside loop, iteration {i}")
                 for ch in good_channels:
                     # Find the bins corresponding to the current time window (from -500ms to +1000ms relative to the onset)
                     start_bin = int((onset - 0.5) / bin_size)
@@ -1263,8 +1263,9 @@ class NeuralAnalysis:
                 # Extract the portion of the analog signal corresponding to the current time window
                 epoch_analog_signal = analog_signal[start_idx:end_idx][:1500]/4 # Divide by 4 to scale the analog signal of 0.25 per bit per blackrick
                 
-                if i < 20:  # Only save the first 20 stim analog signals
-                    individual_stim_analog_signals.append(epoch_analog_signal)        
+                if i < 1:  # Only save the first 20 stim analog signals
+                    individual_stim_analog_signals.append(epoch_analog_signal) 
+                    break # Break out of the loop after saving the first x stim analog signals       
         
             # Calculate the mean PSTH by dividing the sum by the count
             mean_psth = np.divide(sum_psth, count_psth, where=(count_psth!=0))
