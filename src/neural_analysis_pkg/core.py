@@ -1311,6 +1311,9 @@ class NeuralAnalysis:
                 ax.axvline(x=0, color='r', linestyle='--')  # Mark stimulus onset
                 ax.axvline(x=500, color='r', linestyle='--')  # Mark stimulus offset
                 
+                # Set x-limits to focus on a specific time window
+                ax.set_xlim([-25, 250])  # for example, to focus on -100 to 300 ms
+                
                 # Plot the analog signal based on display_mode
                 if display_mode != 'none':
                     ax2 = ax.twinx()
@@ -1322,6 +1325,8 @@ class NeuralAnalysis:
                     if display_mode == 'individual' or display_mode == 'both':
                         for analog_sig in individual_stim_analog_signals:
                             ax2.plot(time_axis, analog_sig, 'g-', alpha=0.5, label='Individual Stim')
+                            
+                ax2.yaxis.set_visible(False)  # Hide the y-axis for the analog signal
                 
 
             plt.show()
