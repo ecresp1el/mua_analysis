@@ -1178,6 +1178,9 @@ class NeuralAnalysis:
             PSTH plots with analog signal overlaid on top
             """
             
+            # Initialize sum for analog signals
+            sum_analog_signal = np.zeros((1500,))
+            
             # Step 1: Identify the time windows for the specified stimulus_id
             stim_data = self.stimulation_data_df[
                 (self.stimulation_data_df['recording_name'] == recording_name) & 
@@ -1264,15 +1267,28 @@ class NeuralAnalysis:
                 # Extract the portion of the analog signal corresponding to the current time window
                 epoch_analog_signal = analog_signal[start_idx:end_idx]/4 # Divide by 4 to scale the analog signal of 0.25 per bit per blackrick
                 
-                if i < 10:  # Only save the first 20 stim analog signals
-                    resampled_epoch_analog_signal = resample_analog_signal(epoch_analog_signal)
-                    individual_stim_analog_signals.append(resampled_epoch_analog_signal)
+                # Add the epoch_analog_signal to sum_analog_signal
+                sum_analog_signal += epoch_analog_signal
+                
+                # remove the commented out code below to plot the analog signal for each stim 
+                #if i < 10:  # Only save the first 20 stim analog signals
+                #    resampled_epoch_analog_signal = resample_analog_signal(epoch_analog_signal)
+                #    individual_stim_analog_signals.append(resampled_epoch_analog_signal)
         
             # Calculate the mean PSTH by dividing the sum by the count
             mean_psth = np.divide(sum_psth, count_psth, where=(count_psth!=0))
             
             # Convert firing rate from spikes per bin to spikes per second (Hz)
             mean_psth /= bin_size
+            
+            # Calculate the mean analog signal
+            mean_analog_signal = sum_analog_signal / len(stim_data)
+            resampled_epoch_analog_signal = resample_analog_signal(mean_analog_signal)
+            individual_stim_analog_signals.append(resampled_epoch_analog_signal)
+            
+            
+            
+            
 
             
             # Create a time axis that spans from -500 ms to +1000 ms
