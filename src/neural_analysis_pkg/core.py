@@ -646,6 +646,8 @@ class NeuralAnalysis:
                 avg_val = np.abs(np.mean(waveform))
                 std_val = np.std(waveform)
                 
+                print(f"Average value: {avg_val}, Std value: {std_val}")
+                
                 # Falsely detected spikes usually have high std and their mean is far from zero.
                 # Therefore, we filter out spikes that don't meet these criteria.
                 if avg_val <= 1 and std_val <= 3:
