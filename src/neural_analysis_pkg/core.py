@@ -1150,7 +1150,7 @@ class NeuralAnalysis:
 
         plt.show()
         
-    def calculate_psth_and_plot_with_analog_signal(self, recording_name, firing_rate_estimates, stim_id=8, bin_size=0.001):
+    def calculate_psth_and_plot_with_analog_signal(self, recording_name, firing_rate_estimates, stim_id=8, bin_size=0.001, display_mode='mean'):
             """
             Calculate the Peri-Stimulus Time Histogram (PSTH) for a given recording. This method will then plot 
             the PSTH for each channel for all trials where stim_id is equal to the specified value in addition to the analog signal. 
@@ -1177,10 +1177,10 @@ class NeuralAnalysis:
             -------
             PSTH plots with analog signal overlaid on top
             """
-            
-            # Initialize sum for analog signals
-            sum_analog_signal = np.zeros((1500,))
-            
+            # Initialize sum for analog signals and a list for individual traces
+            sum_analog_signal = np.zeros((1500,))  # Assuming 1500 samples per trial
+            individual_stim_analog_signals = []
+    
             # Step 1: Identify the time windows for the specified stimulus_id
             stim_data = self.stimulation_data_df[
                 (self.stimulation_data_df['recording_name'] == recording_name) & 
@@ -1262,18 +1262,16 @@ class NeuralAnalysis:
                 # New: Update sum_analog_signal using the onset and offset times
                 start_idx = int((onset - 0.5) * 10000)
                 end_idx = int((onset + 1.0) * 10000)
-        
+                    
+                # Extract and resample the portion of the analog signal corresponding to the current time window
+                epoch_analog_signal = analog_signal[start_idx:end_idx] / 4 # Divide by 4 to scale the analog signal of 0.25 per bit per blackrick
+                resampled_epoch_analog_signal = resample_analog_signal(epoch_analog_signal)  # Assuming you have a resample_analog_signal function
                 
-                # Extract the portion of the analog signal corresponding to the current time window
-                epoch_analog_signal = analog_signal[start_idx:end_idx]/4 # Divide by 4 to scale the analog signal of 0.25 per bit per blackrick
-                
-                # Add the epoch_analog_signal to sum_analog_signal
-                sum_analog_signal += epoch_analog_signal
-                
-                # remove the commented out code below to plot the analog signal for each stim 
-                #if i < 10:  # Only save the first 20 stim analog signals
-                #    resampled_epoch_analog_signal = resample_analog_signal(epoch_analog_signal)
-                #    individual_stim_analog_signals.append(resampled_epoch_analog_signal)
+                # Update sum and list based on display_mode
+                if display_mode == 'mean' or display_mode == 'both':
+                    sum_analog_signal += resampled_epoch_analog_signal
+                if display_mode == 'individual' or display_mode == 'both':
+                    individual_stim_analog_signals.append(resampled_epoch_analog_signal)
         
             # Calculate the mean PSTH by dividing the sum by the count
             mean_psth = np.divide(sum_psth, count_psth, where=(count_psth!=0))
@@ -1281,14 +1279,9 @@ class NeuralAnalysis:
             # Convert firing rate from spikes per bin to spikes per second (Hz)
             mean_psth /= bin_size
             
-            # Calculate the mean analog signal
-            mean_analog_signal = sum_analog_signal / len(stim_data)
-            resampled_epoch_analog_signal = resample_analog_signal(mean_analog_signal)
-            individual_stim_analog_signals.append(resampled_epoch_analog_signal)
-            
-            
-            
-            
+                # Calculate the mean analog signal if needed
+            if display_mode == 'mean' or display_mode == 'both':
+                mean_analog_signal = sum_analog_signal / len(stim_data)
 
             
             # Create a time axis that spans from -500 ms to +1000 ms
@@ -1315,16 +1308,17 @@ class NeuralAnalysis:
                 ax.axvline(x=0, color='r', linestyle='--')  # Mark stimulus onset
                 ax.axvline(x=500, color='r', linestyle='--')  # Mark stimulus offset
                 
-                # New: Overlay the mean analog signal on the PSTH plot
-                ax2 = ax.twinx()  # Create a second y-axis that shares the same x-axis
-                for j, analog_sig in enumerate(individual_stim_analog_signals):
-                    if j == 0:  # Add a label only for the first line to avoid duplicating the legend entry
-                        ax2.plot(time_axis, analog_sig, 'k-', alpha=0.5, label='Analog Signal')
-                    else:
-                        ax2.plot(time_axis, analog_sig, 'k-', alpha=0.5)  # Plot as black lines with some transparency
-                #ax2.set_ylabel('Analog Signal Value', color='k')
-                ax2.set_yticklabels([]) # Hide the y-tick labels
-                #ax2.tick_params(axis='y', labelcolor='k')
+                # Plot the analog signal based on display_mode
+                if display_mode != 'none':
+                    ax2 = ax.twinx()
+                    ax2.set_ylabel('Analog Signal Value', color='k')
+                    ax2.tick_params(axis='y', labelcolor='g')
+
+                    if display_mode == 'mean' or display_mode == 'both':
+                        ax2.plot(time_axis, mean_analog_signal, 'k-', alpha=0.5, label='Mean Stim')
+                    if display_mode == 'individual' or display_mode == 'both':
+                        for analog_sig in individual_stim_analog_signals:
+                            ax2.plot(time_axis, analog_sig, 'g-', alpha=0.5, label='Individual Stim')
                 
 
             plt.show()
