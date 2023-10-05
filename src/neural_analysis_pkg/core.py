@@ -1267,9 +1267,12 @@ class NeuralAnalysis:
                 epoch_analog_signal = analog_signal[start_idx:end_idx] / 4 # Divide by 4 to scale the analog signal of 0.25 per bit per blackrick
                 resampled_epoch_analog_signal = resample_analog_signal(epoch_analog_signal)  # Assuming you have a resample_analog_signal function
                 
-                # Update sum and list based on display_mode
+                # Inside your loop where you add to sum_analog_signal
                 if display_mode == 'mean' or display_mode == 'both':
+                    resampled_epoch_analog_signal = enforce_length(resampled_epoch_analog_signal)
+                    sum_analog_signal = enforce_length(sum_analog_signal)
                     sum_analog_signal += resampled_epoch_analog_signal
+                    
                 if display_mode == 'individual' or display_mode == 'both':
                     individual_stim_analog_signals.append(resampled_epoch_analog_signal)
         
@@ -1727,3 +1730,14 @@ def resample_analog_signal(analog_signal, original_sampling_rate=10000, target_b
         resampled_signal[i // samples_per_target_bin] = np.mean(analog_signal[i:i + samples_per_target_bin])
     
     return resampled_signal
+
+def enforce_length(arr, target_length=1500):
+    current_length = len(arr)
+    if current_length < target_length:
+        # Pad array with zeros at the end
+        return np.pad(arr, (0, target_length - current_length), 'constant', constant_values=0)
+    elif current_length > target_length:
+        # Truncate array at the end
+        return arr[:target_length]
+    else:
+        return arr
