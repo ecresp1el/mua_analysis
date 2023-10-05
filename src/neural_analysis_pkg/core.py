@@ -1258,7 +1258,7 @@ class NeuralAnalysis:
                     
                 # New: Update sum_analog_signal using the onset and offset times
                 start_idx = int((onset - 0.5) * 10000)
-                end_idx = int((offset + 0.5) * 10000)
+                end_idx = int((onset + 1.0) * 10000)
         
                 
                 # Extract the portion of the analog signal corresponding to the current time window
