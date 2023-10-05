@@ -1303,12 +1303,11 @@ class NeuralAnalysis:
                 ax2 = ax.twinx()  # Create a second y-axis that shares the same x-axis
                 for j, analog_sig in enumerate(individual_stim_analog_signals):
                     if j == 0:  # Add a label only for the first line to avoid duplicating the legend entry
-                        ax2.plot(time_axis, analog_sig, 'k-', alpha=0.5, label='Individual Stim')
+                        ax2.plot(time_axis, analog_sig, 'k-', alpha=0.5, label='Analog Signal')
                     else:
                         ax2.plot(time_axis, analog_sig, 'k-', alpha=0.5)  # Plot as black lines with some transparency
                 ax2.set_ylabel('Analog Signal Value', color='k')
-                ax2.tick_params(axis='y', labelcolor='g')
-                ax2.legend(loc='upper right')
+                ax2.tick_params(axis='y', labelcolor='k')
                 
 
             plt.show()
