@@ -1150,7 +1150,7 @@ class NeuralAnalysis:
 
         plt.show()
         
-    def calculate_psth_and_plot_with_analog_signal(self, recording_name, firing_rate_estimates, stim_id=8, bin_size=0.001, display_mode='mean'):
+    def calculate_psth_and_plot_with_analog_signal(self, recording_name, firing_rate_estimates, stim_id=8, bin_size=0.001, display_mode='mean', zoom_in=False, zoom_in_window=[-25,125]):
             """
             Calculate the Peri-Stimulus Time Histogram (PSTH) for a given recording. This method will then plot 
             the PSTH for each channel for all trials where stim_id is equal to the specified value in addition to the analog signal. 
@@ -1311,8 +1311,9 @@ class NeuralAnalysis:
                 ax.axvline(x=0, color='r', linestyle='--')  # Mark stimulus onset
                 ax.axvline(x=500, color='r', linestyle='--')  # Mark stimulus offset
                 
-                # Set x-limits to focus on a specific time window
-                ax.set_xlim([-25, 250])  # for example, to focus on -100 to 300 ms
+                # Set x-limits to focus on a specific time window if zoom_in is True (default is False)
+                if zoom_in:
+                    ax.set_xlim(zoom_in_window)  # for example, to focus on -100 to 300 ms (zoom_in_window = [-100, 300])
                 
                 # Plot the analog signal based on display_mode
                 if display_mode != 'none':
