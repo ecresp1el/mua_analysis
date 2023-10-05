@@ -1150,7 +1150,7 @@ class NeuralAnalysis:
 
         plt.show()
         
-    def calculate_psth_and_plot_with_analog_signal(self, recording_name, firing_rate_estimates, stim_id=8, bin_size=0.001, display_mode='mean', zoom_in=False, zoom_in_window=[-25,125]):
+    def calculate_psth_and_plot_with_analog_signal(self, recording_name, firing_rate_estimates, stim_id=8, bin_size=0.001, display_mode='mean', zoom_in=False, zoom_in_window=[-25,125] ):
             """
             Calculate the Peri-Stimulus Time Histogram (PSTH) for a given recording. This method will then plot 
             the PSTH for each channel for all trials where stim_id is equal to the specified value in addition to the analog signal. 
@@ -1233,10 +1233,10 @@ class NeuralAnalysis:
             sum_psth = np.zeros((self.n_channels, num_bins))  # Initialize with zeros
             count_psth = np.zeros((self.n_channels, num_bins))  # Initialize with zeros
 
-            print(f"Length of stim_data: {len(stim_data)}") 
+            # print(f"Length of stim_data: {len(stim_data)}") 
             
             for i, (onset, offset) in enumerate(zip(stim_data['onset_times'], stim_data['offset_times'])):
-                print(f"Inside loop, iteration {i}")
+                # print(f"Inside loop, iteration {i}")
                 for ch in good_channels:
                     # Find the bins corresponding to the current time window (from -500ms to +1000ms relative to the onset)
                     start_bin = int((onset - 0.5) / bin_size)
