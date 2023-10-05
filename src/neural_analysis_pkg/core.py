@@ -1265,7 +1265,8 @@ class NeuralAnalysis:
                 epoch_analog_signal = analog_signal[start_idx:end_idx][:1500]/4 # Divide by 4 to scale the analog signal of 0.25 per bit per blackrick
                 
                 if i < 1:  # Only save the first 20 stim analog signals
-                    individual_stim_analog_signals.append(epoch_analog_signal) 
+                    resampled_epoch_analog_signal = resample_analog_signal(epoch_analog_signal)
+                    individual_stim_analog_signals.append(resampled_epoch_analog_signal)
         
             # Calculate the mean PSTH by dividing the sum by the count
             mean_psth = np.divide(sum_psth, count_psth, where=(count_psth!=0))
@@ -1690,3 +1691,29 @@ def bootstrap_ci(data, n_bootstraps=1000, ci=0.99):
 def find_local_minimum(data, start_idx, search_window=10):
     return np.argmin(data[start_idx:start_idx + search_window]) + start_idx
 
+
+# Function to resample the analog signal to align with PSTH bins
+def resample_analog_signal(analog_signal, original_sampling_rate=10000, target_bin_size=0.001):
+    """
+    Resamples the analog signal to fit into the target bin size.
+
+    Parameters:
+    - analog_signal (numpy array): The analog signal to be resampled.
+    - original_sampling_rate (int): The original sampling rate of the analog signal (in Hz).
+    - target_bin_size (float): The target bin size for resampling (in seconds).
+
+    Returns:
+    - resampled_signal (numpy array): The resampled analog signal.
+    """
+    
+    # Number of original samples that correspond to one target bin
+    samples_per_target_bin = int(original_sampling_rate * target_bin_size)
+    
+    # Initialize the resampled signal array
+    resampled_signal = np.zeros(len(analog_signal) // samples_per_target_bin)
+    
+    # Populate the resampled signal by averaging every 'samples_per_target_bin' samples
+    for i in range(0, len(analog_signal) - samples_per_target_bin + 1, samples_per_target_bin):
+        resampled_signal[i // samples_per_target_bin] = np.mean(analog_signal[i:i + samples_per_target_bin])
+    
+    return resampled_signal
