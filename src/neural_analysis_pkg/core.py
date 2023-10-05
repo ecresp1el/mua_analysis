@@ -1306,8 +1306,9 @@ class NeuralAnalysis:
                         ax2.plot(time_axis, analog_sig, 'k-', alpha=0.5, label='Analog Signal')
                     else:
                         ax2.plot(time_axis, analog_sig, 'k-', alpha=0.5)  # Plot as black lines with some transparency
-                ax2.set_ylabel('Analog Signal Value', color='k')
-                ax2.tick_params(axis='y', labelcolor='k')
+                #ax2.set_ylabel('Analog Signal Value', color='k')
+                ax2.set_yticklabels([]) # Hide the y-tick labels
+                #ax2.tick_params(axis='y', labelcolor='k')
                 
 
             plt.show()
