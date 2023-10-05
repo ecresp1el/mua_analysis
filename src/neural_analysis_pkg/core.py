@@ -1337,7 +1337,7 @@ class NeuralAnalysis:
                 if i >= self.n_channels:
                     ax.axis('off')  # Turn off axes for empty subplots
                     continue
-                ax.plot(time_axis, mean_psth[i, :])
+                ax.plot(time_axis, mean_psth[i, :], color='grey')
                 ax.set_xlabel('Time (ms)')
                 ax.set_ylabel('Firing Rate (Hz)')
                 ax.set_title(f'Channel {i+1}')
@@ -1355,7 +1355,7 @@ class NeuralAnalysis:
                     ax2.tick_params(axis='y', labelcolor='g')
 
                     if display_mode == 'mean' or display_mode == 'both':
-                        ax2.plot(time_axis, mean_analog_signal, 'k-', alpha=0.5, label='Mean Stim')
+                        ax2.plot(time_axis, mean_analog_signal, color='dodgerblue', alpha=0.5, label='Mean Stim')
                     if display_mode == 'individual' or display_mode == 'both':
                         for analog_sig in individual_stim_analog_signals:
                             ax2.plot(time_axis, analog_sig, 'g-', alpha=0.5, label='Individual Stim')
