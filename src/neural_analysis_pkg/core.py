@@ -619,9 +619,11 @@ class NeuralAnalysis:
                     Here's how it fits into the overall logic:
 
                     For each candidate spike, the algorithm checks whether it occurs too close to the last confirmed spike (if ms - last_spike_time < refractory_period: continue). 
-                    If it does, the candidate is rejected. If the candidate spike is not rejected by the above test, the code goes on to further validate the spike (e.g., by looking at the next md samples).
+                    If it does, the candidate is rejected. 
+                    If the candidate spike is not rejected by the above test, the code goes on to further validate the spike (e.g., by looking at the next md samples).
                     Once the spike is confirmed, last_spike_time is updated to this spike's time (ms).
-                    By updating last_spike_time, the algorithm ensures that the next candidate spike will be compared to the most recently confirmed spike when checking the refractory period condition. This helps to maintain a minimum distance between confirmed spikes, reducing the chances of counting multiple threshold crossings within a single physiological spike as multiple distinct spikes
+                    By updating last_spike_time, the algorithm ensures that the next candidate spike will be compared to the most recently confirmed spike when checking the refractory period condition. 
+                    This helps to maintain a minimum distance between confirmed spikes, reducing the chances of counting multiple threshold crossings within a single physiological spike as multiple distinct spikes
                     """
                     last_spike_time = ms  # Update the time of the last confirmed spike
             
@@ -646,7 +648,7 @@ class NeuralAnalysis:
                 avg_val = np.abs(np.mean(waveform))
                 std_val = np.std(waveform)
                 
-                print(f"Average value: {avg_val}, Std value: {std_val}")
+                # print(f"Average value: {avg_val}, Std value: {std_val}")
                 
                 # Falsely detected spikes usually have high std and their mean is far from zero.
                 # Therefore, we filter out spikes that don't meet these criteria.
