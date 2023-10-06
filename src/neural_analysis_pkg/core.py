@@ -535,6 +535,9 @@ class NeuralAnalysis:
             
         - The method saves the confirmed spikes and their waveforms as structured NumPy arrays.
         """
+        
+        last_spike_time_per_channel = {}
+        
         last_spike_time = -md  # Initialize last spike time to be negative
         refractory_period = md  # Set refractory period equal to the size of the window (adjust as needed)
         
@@ -582,27 +585,13 @@ class NeuralAnalysis:
                 # Get the corresponding channel for this spike.
                 ch = spike_channels[i]
                 
-                # The logic behind setting the refractory period to the size of md initially is that md 
-                # is already being used to confirm that a series of samples are part of a spike event. 
-                # It stands to reason that if you need md samples to confirm a spike, 
-                # then you should not see another spike for at least md samples. 
-                # However, this is a simplification and may not hold for all neural data, so feel free to adjust the refractory period based on your specific needs.
-                
-                # Check if we are within the refractory period. 
-                # checks whether the current spike (ms) occurs within the refractory period following the last spike (last_spike_time). 
-                # If it does, the continue statement skips the rest of the loop body and moves on to the next iteration, effectively ignoring this spike as a candidate
-                
-                """
-                    Breakdown of the if statement:
-                    ms is the sample index of the current candidate spike.
-                    last_spike_time is the sample index of the last confirmed spike.
-                    refractory_period is the minimum number of samples that must pass between spikes for them to be considered distinct.
-                    So, ms - last_spike_time gives the number of samples between the current candidate spike and the last confirmed spike. 
-                    If this number is smaller than refractory_period, then the candidate spike is rejected, and the loop moves to the next iteration.
-                """
-                if ms - last_spike_time < refractory_period:
-                    # print(f"Spike at index {ms} is within refractory period. Skipping.")
-                    continue  # Skip this spike, it's too close to the last one
+                # Initialize if the channel is being encountered for the first time
+                if ch not in last_spike_time_per_channel:
+                    last_spike_time_per_channel[ch] = -md
+                    
+                # Check refractory period for this specific channel
+                if ms - last_spike_time_per_channel[ch] < refractory_period:
+                    continue  # Skip this spike, it's too close to the last one on the same channel
                 
                 
                 # Check the next 'md' samples to confirm this is a spike.
@@ -615,17 +604,9 @@ class NeuralAnalysis:
                     
                     # Append the local minimum and the channel to the list of confirmed spikes.
                     confirmed_spikes.append((local_minimum, ch))   
-                    """
-                    Here's how it fits into the overall logic:
 
-                    For each candidate spike, the algorithm checks whether it occurs too close to the last confirmed spike (if ms - last_spike_time < refractory_period: continue). 
-                    If it does, the candidate is rejected. 
-                    If the candidate spike is not rejected by the above test, the code goes on to further validate the spike (e.g., by looking at the next md samples).
-                    Once the spike is confirmed, last_spike_time is updated to this spike's time (ms).
-                    By updating last_spike_time, the algorithm ensures that the next candidate spike will be compared to the most recently confirmed spike when checking the refractory period condition. 
-                    This helps to maintain a minimum distance between confirmed spikes, reducing the chances of counting multiple threshold crossings within a single physiological spike as multiple distinct spikes
-                    """
-                    last_spike_time = ms  # Update the time of the last confirmed spike
+                    # Update last spike time for this channel
+                    last_spike_time_per_channel[ch] = ms
             
             print(f"Number of confirmed spikes after enhanced detection: {len(confirmed_spikes)}")
             print("Enhanced spike detection completed.")
