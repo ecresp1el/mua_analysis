@@ -1497,13 +1497,20 @@ class NeuralAnalysis:
                     
                     # Store the mean PSTHs in the dictionary
                     electrode_name = f"Ch_{ch+1}"
+                    
+                    # Initialize dictionary entries if they don't exist yet
                     if electrode_name not in mean_psths_dict[recording_name]:
                         mean_psths_dict[recording_name][electrode_name] = {}
-                        
-                    mean_psths_dict[recording_name][electrode_name]['pre-luciferin_mean_psth'] = mean_psth_pre
-                    mean_psths_dict[recording_name][electrode_name]['post-luciferin_mean_psth'] = mean_psth_post
+                    if 'Stim_IDs' not in mean_psths_dict[recording_name][electrode_name]:
+                        mean_psths_dict[recording_name][electrode_name]['Stim_IDs'] = {}
                     
-                
+                    stim_id_dict = {
+                        'pre-luciferin_mean_psth': mean_psth_pre,
+                        'post-luciferin_mean_psth': mean_psth_post
+                    }
+                    
+                    mean_psths_dict[recording_name][electrode_name]['Stim_IDs'][f"Stim_{stim_id}"] = stim_id_dict                    
+                    
                 else:  # If the channel is noisy
                     # You can either skip plotting or plot something to indicate it's a noisy channel
                     # For example, you could fill the subplot with a solid color to indicate it's noisy
@@ -1512,11 +1519,20 @@ class NeuralAnalysis:
                     
                     
                     # Store N/As in the dictionary for noisy channels
+                    # Initialize dictionary entries if they don't exist yet
                     electrode_name = f"Ch_{ch+1}"
                     if electrode_name not in mean_psths_dict[recording_name]:
                         mean_psths_dict[recording_name][electrode_name] = {}
-                    mean_psths_dict[recording_name][electrode_name]['pre-luciferin_mean_psth'] = 'N/A'
-                    mean_psths_dict[recording_name][electrode_name]['post-luciferin_mean_psth'] = 'N/A'                    
+                    if 'Stim_IDs' not in mean_psths_dict[recording_name][electrode_name]:
+                        mean_psths_dict[recording_name][electrode_name]['Stim_IDs'] = {}
+                    
+                    # Store N/As in the dictionary for noisy channels under each stimulus ID
+                    stim_id_dict = {
+                        'pre-luciferin_mean_psth': 'N/A',
+                        'post-luciferin_mean_psth': 'N/A'
+                    }
+    
+                    mean_psths_dict[recording_name][electrode_name]['Stim_IDs'][f"Stim_{stim_id}"] = stim_id_dict                 
                                 
         # Save the figure
         save_path = os.path.join(full_path, f"{recording_name}_psth_prevspost.svg")
