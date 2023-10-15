@@ -1111,7 +1111,15 @@ class NeuralAnalysis:
         Returns
         -------
         PSTH plots
+        
+
+        psth_dict : dictionary
+        A nested dictionary where the outer key is the recording name, and the inner key is the channel ID.
+        The value is the mean PSTH for that channel.
         """
+        
+        # Initialize an empty dictionary to store the PSTH results
+        psth_dict = {}
         
         # Step 1: Identify the time windows for the specified stimulus_id
         stim_data = self.stimulation_data_df[
@@ -1165,6 +1173,12 @@ class NeuralAnalysis:
         
         # Convert firing rate from spikes per bin to spikes per second (Hz)
         mean_psth /= bin_size
+        
+        # Create a nested dictionary for the current recording
+        psth_dict[recording_name] = {}
+        
+        for ch in range(self.n_channels):
+            psth_dict[recording_name][ch] = mean_psth[ch, :]
 
         # Create a time axis that spans from -500 ms to +1000 ms
         time_axis = np.linspace(-500, 1000, num_bins)
@@ -1191,6 +1205,8 @@ class NeuralAnalysis:
             ax.axvline(x=500, color='r', linestyle='--')  # Mark stimulus offset
 
         plt.show()
+        
+        return psth_dict  # Return the PSTH dictionary per recording
         
     def calculate_psth_and_plot_with_analog_signal(self, recording_name, firing_rate_estimates, stim_id=8, bin_size=0.001, display_mode='mean', zoom_in=False, zoom_in_window=[-25,125] ):
             """
