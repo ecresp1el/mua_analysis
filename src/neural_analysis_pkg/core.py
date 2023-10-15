@@ -1008,6 +1008,9 @@ class NeuralAnalysis:
         poststimulus_CI = []
         responsive_channels = []
         
+        output_dict = {recording_name: {}}  # Initialize the output dictionary with the recording name as the first-level key
+
+        
         avg_firing_rates_for_responsive_channels = []
         all_baseline_firing_rates = []
         
@@ -1056,6 +1059,13 @@ class NeuralAnalysis:
                 responsive_channels.append(ch)
                 avg_firing_rates_for_responsive_channels.append(np.mean(all_poststim_data))
                 all_baseline_firing_rates.extend(all_prestim_data)
+            
+            # Store the results in the dictionary under the recording name
+            output_dict[recording_name][ch] = {
+                'Pre-stim CI': prestim_bootstrap,
+                'Post-stim CI': poststim_bootstrap,
+                'Is Responsive': poststim_bootstrap[0] > prestim_bootstrap[1]
+            }
 
         print("Responsive channels:", responsive_channels)
         
@@ -1066,6 +1076,14 @@ class NeuralAnalysis:
         print(f"Single LED-evoked waveform: {single_waveform}")
         print(f"Baseline: {baseline}")
         print(f"Percent change relative to baseline: {percent_change}%")
+        
+        # Add more global metrics to the dictionary under the recording name
+        output_dict[recording_name]['Responsive Channels'] = responsive_channels
+        output_dict[recording_name]['Single LED-evoked waveform'] = np.mean(avg_firing_rates_for_responsive_channels)
+        output_dict[recording_name]['Baseline'] = np.mean(all_baseline_firing_rates)
+        output_dict[recording_name]['Percent change relative to baseline'] = ((single_waveform - baseline) / baseline) * 100
+        
+        return output_dict  # Return the output dictionary
         
     def calculate_psth_and_plot(self, recording_name, firing_rate_estimates, stim_id=8, bin_size=0.001):
         """
