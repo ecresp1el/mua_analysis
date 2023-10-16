@@ -1235,6 +1235,8 @@ class NeuralAnalysis:
             -------
             PSTH plots with analog signal overlaid on top
             """
+            start, end = zoom_in_window
+            
             # Initialize sum for analog signals and a list for individual traces
             sum_analog_signal = np.zeros((1500,))  # Assuming 1500 samples per trial
             individual_stim_analog_signals = []
@@ -1387,7 +1389,7 @@ class NeuralAnalysis:
                             
                 ax2.yaxis.set_visible(False)  # Hide the y-axis for the analog signal
                 
-
+            plt.savefig(f'/home/cresp1el-local/smb/HochgeschwenderEphysandBehavior/Plots_for_lmc_paper/pooled_psth_pre_and_post_{start}-{end}ms.svg', format='svg')
             plt.show()
         
     def calculate_psth_pre_post_and_plot_allgoodchannels(self, recording_name, firing_rate_estimates, base_dir, bin_size=0.001, pre_trials=30, post_trials=30, zoom_in=False):
