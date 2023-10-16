@@ -1388,7 +1388,9 @@ class NeuralAnalysis:
                             ax2.plot(time_axis, analog_sig, 'g-', alpha=0.5, label='Individual Stim')
                             
                 ax2.yaxis.set_visible(False)  # Hide the y-axis for the analog signal
-                
+            
+            plt.rcParams['svg.fonttype'] = 'none'
+            
             plt.savefig(f'/home/cresp1el-local/smb/HochgeschwenderEphysandBehavior/Plots_for_lmc_paper/pooled_psth_pre_and_post_{start}-{end}ms.svg', format='svg')
             plt.show()
         
