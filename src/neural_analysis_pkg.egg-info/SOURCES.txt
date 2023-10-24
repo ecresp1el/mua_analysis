@@ -1,5 +1,14 @@
 README.md
 setup.py
+McsPy/McsCMOS.py
+McsPy/McsCMOSMEA.py
+McsPy/McsData.py
+McsPy/__init__.py
+McsPy/functions_info.py
+McsPy/tests/TestCMOS.py
+McsPy/tests/TestCmosMeaDataStructures.py
+McsPy/tests/TestRawDataStructures.py
+McsPy/tests/__init__.py
 brpylib/__init__.py
 brpylib/brMiscFxns.py
 brpylib/brpylib.py

@@ -8,6 +8,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import brpylib
 import glob
+import McsPy 
 class NeuralAnalysis:
     """ 
     Initializes new objects created from the NeuralAnalysis class. It is at the class level within your core.py file.
