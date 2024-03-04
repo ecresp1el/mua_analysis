@@ -1726,7 +1726,6 @@ def create_gaussian_window(window_length=0.05, window_sd=0.005, bin_size=0.001):
     
     return gaussian_window
 
-
 def bootstrap_ci(data, n_bootstraps=1000, ci=0.99):
     """
     Calculate the confidence interval for the mean of a dataset using bootstrapping.
@@ -1820,3 +1819,89 @@ def enforce_length(arr, target_length=1500):
         return arr[:target_length]
     else:
         return arr
+
+class AccessingProjectFolder:
+    """
+    A class to access and organize metadata from a structured project folder.
+
+    This class is designed to work with a specific directory structure where the
+    project folder contains group folders, which in turn contain recording folders.
+    Within each recording folder, there is an 'SUA' directory with data files.
+
+    Parameters
+    ----------
+    project_folder_path : str
+        The absolute path to the project folder. The project folder should have
+        the following structure:
+        project_folder/
+        ├── group1/
+        │   ├── recording1/
+        │   │   └── SUA/
+        │   └── recording2/
+        │       └── SUA/
+        ├── group2/
+        │   ├── recording1/
+        │   │   └── SUA/
+        │   └── recording2/
+        │       └── SUA/
+        ...
+        
+    Attributes
+    ----------
+    metadata_dict : dict of lists
+        A dictionary containing the metadata with keys 'group', 'recording', and 'file'.
+        
+    Methods
+    -------
+    create_metadata_dict()
+        Populates the metadata dictionary with groups, recordings, and files from the project folder.
+        
+    get_metadata_dataframe()
+        Converts the metadata dictionary into a pandas DataFrame for easy access and manipulation.
+    """
+    
+    def __init__(self, project_folder_path):
+        """
+        Constructs all the necessary attributes for the AccessingProjectFolder object.
+
+        Parameters
+        ----------
+        project_folder_path : str
+            The absolute path to the project folder with the expected directory structure.
+        """
+        
+        self.project_folder_path = project_folder_path
+        self.metadata_dict = {'group': [], 'recording': [], 'file': []}
+    
+    def create_metadata_dict(self):
+        """
+        Traverses the project folder and populates the metadata dictionary with
+        groups, recordings, and files found within the 'SUA' directory of each recording.
+        
+        This method must be called before attempting to create a DataFrame from the metadata.
+        """
+        for group in os.listdir(self.project_folder_path):
+            group_path = os.path.join(self.project_folder_path, group)
+            if os.path.isdir(group_path):
+                for recording in os.listdir(group_path):
+                    recording_path = os.path.join(group_path, recording)
+                    sua_path = os.path.join(recording_path, 'SUA')
+                    if os.path.isdir(sua_path):
+                        for file in os.listdir(sua_path):
+                            self.metadata_dict['group'].append(group)
+                            self.metadata_dict['recording'].append(recording)
+                            self.metadata_dict['file'].append(file)
+                            
+    def get_metadata_dataframe(self):
+        """
+        Converts the metadata dictionary into a pandas DataFrame.
+
+        The DataFrame has columns 'group', 'recording', and 'file', which correspond to
+        the group names, recording names, and file names within the 'SUA' directory.
+
+        Returns
+        -------
+        DataFrame
+            A pandas DataFrame containing the organized metadata.
+        """
+        return pd.DataFrame(self.metadata_dict)
