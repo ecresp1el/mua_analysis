@@ -422,7 +422,6 @@ class NeuralAnalysis:
         # Return the updated DataFrame
         return self.recording_results_df  
     
-    
     def extract_stimulation_data(self):
         # List to store individual dataframes for each recording
         df_list = []
@@ -669,7 +668,6 @@ class NeuralAnalysis:
             
         print("Enhanced spike detection and filtering completed.")
                     
-        
     def calculate_firingratesfor8HzLEDstim_and_plot_heatmap_for_specific_recording(self, recording_name, plot_heatmap=True):
         """
         Calculate firing rates for 8Hz LED stimulation and optionally plot a heatmap for a specific recording.
@@ -1580,9 +1578,7 @@ class NeuralAnalysis:
         print(f"Figure saved at {save_path}")
         
         return mean_psths_dict
-        
-
-            
+                   
     def calculate_mean_psth(self, stim_data, firing_rate_estimates, ch, bin_size):
         """
         Calculate the mean Peri-Stimulus Time Histogram (PSTH) for a given channel and stimulation data.
@@ -1686,8 +1682,6 @@ class NeuralAnalysis:
         plt.ylabel('Firing Rate (Hz)')
         plt.title('Grouped Mean and SEM PSTH')
         plt.show()
-        
-        
 
 def create_gaussian_window(window_length=0.05, window_sd=0.005, bin_size=0.001):
     """
