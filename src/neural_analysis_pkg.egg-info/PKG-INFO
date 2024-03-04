@@ -24,23 +24,50 @@ Before running the notebook, make sure you have the following prerequisites inst
 
 ## Installation
 
-1. Clone the repository:
+To install the necessary dependencies, you can use the following command:
+Apologies for the confusion. Here's a more specific outline based on your requirements:
 
-    ```bash
-    git clone https://github.com/your-username/your-repo.git
-    ```
+1. **Create a Conda Environment**: Use the `environment.yaml` file to create a conda environment named `neural_analysis_env`. This file should list all the dependencies for your project.
 
-2. Navigate to the `mua_analysis` directory:
+```bash
+conda env create -f environment.yaml
+```
 
-    ```bash
-    cd /path/to/mua_analysis
-    ```
+2. **Activate the Conda Environment**: Once the environment is created, activate it.
 
-3. Install the required dependencies:
+```bash
+conda activate neural_analysis_env
+```
 
-    ```bash
-    pip install -r requirements.txt
-    ```
+3. **Check the Environment's Dependencies**: After activating the environment, check its dependencies to ensure everything is installed correctly.
+
+```bash
+conda list
+```
+
+4. **Navigate to the Directory Containing `setup.py`**: Change your current directory to the one containing the `setup.py` file. Let's assume the directory is `neural_analysis`.
+
+```bash
+cd neural_analysis
+```
+
+5. **Run `setup.py`**: Install the Python package into your active environment.
+
+```bash
+python setup.py install
+```
+
+6. **Verify Installation**: Check that the package was installed correctly. You should see `neural_analysis` in the list of installed packages.
+
+```bash
+conda list
+```
+
+7. **Use the Environment**: Now you can start using this environment for your project. Any Python scripts you run will use the Python interpreter and packages from this environment.
+
+Remember to replace `environment.yaml` with your actual yaml file's name and `neural_analysis` with the actual path to the directory containing your `setup.py` file.
+
+
 
 ## Usage
 
