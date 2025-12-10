@@ -1,5 +1,7 @@
 import os
-from scipy.signal import butter, filtfilt, gaussian, convolve, resample_poly
+import ast
+from pathlib import Path
+from scipy.signal import butter, filtfilt, convolve, resample_poly
 from scipy.io import loadmat
 import numpy as np
 from time import time 
@@ -9,22 +11,177 @@ import matplotlib.pyplot as plt
 import brpylib
 import glob
 import McsPy 
+DEFAULT_DATA_ROOT = Path("/Volumes/MannySSD/lmc_project_v2")
+DEFAULT_OUTPUT_BASE_DIR = Path("/Volumes/MannySSD/PSTH_regenerated_2025")
+
 class NeuralAnalysis:
     """ 
     Initializes new objects created from the NeuralAnalysis class. It is at the class level within your core.py file.
     """
-    def __init__(self, file_path, n_channels=32, sampling_rate=30000, dtype=np.int16):
-        self.file_path = file_path
+    def __init__(self, file_path=DEFAULT_DATA_ROOT, n_channels=32, sampling_rate=30000, dtype=np.int16):
+        self.file_path = Path(file_path)
         self.n_channels = n_channels
         self.sampling_rate = sampling_rate
         self.dtype = dtype
         self.data = None
         self.good_channels = None
         self.noisy_channels = None
+        self._created_output_dirs = set()
         
+        self._validate_data_root()
         
         # Try to load the existing recording_results_df from a CSV file
         self.recording_results_df = self._load_recording_results_df()
+
+    def _validate_data_root(self):
+        """
+        Ensure the expected data root and SpikeStuff folders are present before any processing.
+        """
+        if not self.file_path.exists():
+            raise FileNotFoundError(f"Data root {self.file_path} does not exist.")
+
+        required_spikestuff = [
+            self.file_path / "LED" / "SpikeStuff",
+            self.file_path / "Whisker" / "SpikeStuff",
+        ]
+        missing = [path for path in required_spikestuff if not path.exists()]
+        if missing:
+            missing_str = ", ".join(str(path) for path in missing)
+            raise FileNotFoundError(f"Missing required SpikeStuff folder(s): {missing_str}")
+
+    def _candidate_recording_results_files(self):
+        """
+        Return any recording_results.csv files found within the expected folder hierarchy.
+        """
+        potential_paths = [
+            self.file_path / "SpikeStuff" / "recording_results.csv",  # legacy location
+            self.file_path / "LED" / "SpikeStuff" / "recording_results.csv",
+            self.file_path / "Whisker" / "SpikeStuff" / "recording_results.csv",
+        ]
+        return [path for path in potential_paths if path.exists()]
+
+    @staticmethod
+    def _safe_literal_eval(value):
+        """
+        Safely convert serialized list columns back to Python lists.
+        """
+        if isinstance(value, str):
+            return ast.literal_eval(value)
+        return value
+
+    @staticmethod
+    def _remap_path_for_recording(original_path, spike_root, group_name, recording_name):
+        """
+        Re-root stored file paths so they point to the current dataset location.
+        """
+        if pd.isna(original_path):
+            return original_path
+
+        filename = Path(original_path).name
+        candidate = Path(spike_root) / group_name / recording_name / filename
+        if candidate.exists():
+            return str(candidate)
+
+        alt_matches = list((Path(spike_root) / group_name / recording_name).rglob(filename))
+        if alt_matches:
+            return str(alt_matches[0])
+
+        return str(candidate)
+
+    @staticmethod
+    def _build_timestamp_path(recording_dir):
+        return Path(recording_dir) / "MUA" / "allData" / "timestamp_s.mat"
+
+    def _validate_recording_assets(self, recording_results_df):
+        """
+        Confirm that all required files for PSTH generation exist.
+        """
+        missing_required = []
+        missing_optional = []
+        timestamp_paths = []
+        spike_time_paths = []
+        availability_flags = []
+
+        for _, row in recording_results_df.iterrows():
+            recording_dir_val = row.get('recording_dir')
+            if recording_dir_val is None or pd.isna(recording_dir_val):
+                recording_dir_val = Path(row['mua_data_path']).parent
+            recording_dir = Path(recording_dir_val)
+
+            timestamp_path = self._build_timestamp_path(recording_dir)
+            timestamp_paths.append(str(timestamp_path))
+
+            mua_path_val = row.get('mua_data_path')
+            mua_path = None if (mua_path_val is None or pd.isna(mua_path_val)) else Path(mua_path_val)
+            downsampled_path_val = row.get('downsampled_path')
+            downsampled_path = None if (downsampled_path_val is None or pd.isna(downsampled_path_val)) else Path(downsampled_path_val)
+
+            spike_times_path = None
+            if mua_path:
+                spike_times_path = mua_path.with_name(mua_path.name.replace('_MUA.npy', '_spike_times.npy'))
+            spike_time_paths.append(str(spike_times_path) if spike_times_path else None)
+
+            required_checks = [
+                ("MUA data", mua_path),
+                ("timestamp file", timestamp_path),
+            ]
+            optional_checks = [
+                ("downsampled data", downsampled_path),
+                ("spike time file", spike_times_path),
+            ]
+
+            has_required_assets = all(path_obj is not None and Path(path_obj).exists() for _, path_obj in required_checks)
+            availability_flags.append(has_required_assets)
+
+            for label, path_obj in required_checks:
+                if path_obj is None or not Path(path_obj).exists():
+                    missing_required.append(f"{row['recording_name']} ({label}) -> {path_obj}")
+
+            for label, path_obj in optional_checks:
+                if path_obj is None or not Path(path_obj).exists():
+                    missing_optional.append(f"{row['recording_name']} ({label}) -> {path_obj}")
+
+        if missing_required:
+            print("Recordings missing required assets will be marked unavailable:\n" + "\n".join(missing_required))
+
+        if missing_optional:
+            print("Some recordings are missing optional assets and may be skipped when required:\n" + "\n".join(missing_optional))
+
+        if not any(availability_flags):
+            raise FileNotFoundError(
+                "None of the recordings contain the required MUA and timestamp files."
+            )
+
+        recording_results_df['timestamp_path'] = timestamp_paths
+        recording_results_df['spike_times_path'] = spike_time_paths
+        recording_results_df['recording_dir'] = recording_results_df.apply(
+            lambda row: str(Path(row.get('mua_data_path')).parent) if pd.notna(row.get('mua_data_path')) else None,
+            axis=1
+        )
+        recording_results_df['has_required_assets'] = availability_flags
+
+        return recording_results_df
+
+    def _prepare_output_directory(self, base_dir, subfolder_name):
+        """
+        Create a new, run-specific output directory while preventing overwrites.
+        """
+        base_path = Path(base_dir).resolve()
+        subfolder_path = base_path / subfolder_name
+
+        if base_path.exists() and base_path not in self._created_output_dirs:
+            raise FileExistsError(f"Output base directory already exists: {base_path}. Choose a new location.")
+
+        if not base_path.exists():
+            base_path.mkdir(parents=True, exist_ok=False)
+            self._created_output_dirs.add(base_path)
+
+        if not subfolder_path.exists():
+            subfolder_path.mkdir(parents=True, exist_ok=False)
+        elif base_path not in self._created_output_dirs:
+            raise FileExistsError(f"Output subfolder already exists: {subfolder_path}. Choose a new location.")
+
+        return subfolder_path
         
     def process_ns6_files(self, project_folder_path, target_channel=33):
         """
@@ -86,22 +243,45 @@ class NeuralAnalysis:
         
     def _load_recording_results_df(self):
         """
-        Private method to load the recording results dataframe from an existing CSV file.
+        Private method to load the recording results dataframe from existing CSV file(s).
         """
-        csv_file_path = os.path.join(self.file_path, "SpikeStuff", "recording_results.csv")
+        candidate_csvs = self._candidate_recording_results_files()
 
-        
-        if os.path.exists(csv_file_path):
-            recording_results_df = pd.read_csv(csv_file_path)
-            # Convert 'good_channels' and 'noisy_channels' from string representation to lists
-            recording_results_df['good_channels'] = recording_results_df['good_channels'].apply(eval)
-            recording_results_df['noisy_channels'] = recording_results_df['noisy_channels'].apply(eval)
-            recording_results_df['rms_values'] = recording_results_df['rms_values'].apply(eval)
-            print(f"Loaded existing recording results dataframe from {csv_file_path}")
-            return recording_results_df
-        else:
+        if not candidate_csvs:
             print("No existing recording results dataframe found. Run process_dat_file method to generate it.")
             return None
+
+        dataframes = []
+        for csv_file_path in candidate_csvs:
+            recording_results_df = pd.read_csv(csv_file_path)
+            for col in ['good_channels', 'noisy_channels', 'rms_values']:
+                if col in recording_results_df.columns:
+                    recording_results_df[col] = recording_results_df[col].apply(self._safe_literal_eval)
+
+            spike_root = csv_file_path.parent
+            recording_results_df['recording_dir'] = recording_results_df.apply(
+                lambda row: str(Path(spike_root) / row['group_name'] / row['recording_name']),
+                axis=1
+            )
+
+            for col in ['downsampled_path', 'mua_data_path']:
+                if col in recording_results_df.columns:
+                    recording_results_df[col] = recording_results_df.apply(
+                        lambda row: self._remap_path_for_recording(
+                            row[col],
+                            spike_root,
+                            row['group_name'],
+                            row['recording_name']
+                        ),
+                        axis=1
+                    )
+
+            dataframes.append(recording_results_df)
+
+        combined_results_df = pd.concat(dataframes, ignore_index=True)
+        combined_results_df = self._validate_recording_assets(combined_results_df)
+        print(f"Loaded existing recording results dataframe from {', '.join(str(path) for path in candidate_csvs)}")
+        return combined_results_df
         
     def process_dat_file(self, project_folder_path):
         """
@@ -426,17 +606,17 @@ class NeuralAnalysis:
         # List to store individual dataframes for each recording
         df_list = []
 
-        for idx, row in self.recording_results_df.iterrows():
-            # Construct the path to the .mat file
-            mat_file_path = os.path.join(
-                self.file_path, 
-                'SpikeStuff',
-                row['group_name'], 
-                row['recording_name'], 
-                'MUA', 
-                'allData', 
-                'timestamp_s.mat'
-            )
+        results_df = self.recording_results_df
+        if 'has_required_assets' in results_df.columns:
+            results_df = results_df[results_df['has_required_assets']]
+
+        if results_df.empty:
+            raise FileNotFoundError("No recordings with required assets are available for stimulation extraction.")
+
+        for idx, row in results_df.iterrows():
+            mat_file_path = Path(row['timestamp_path'])
+            if not mat_file_path.exists():
+                raise FileNotFoundError(f"Missing timestamp_s.mat for {row['recording_name']} at {mat_file_path}")
             
             # Load the .mat file with scipy.io.loadmat
             mat_data = loadmat(mat_file_path)
@@ -1393,7 +1573,7 @@ class NeuralAnalysis:
             plt.savefig(f'/home/cresp1el-local/smb/HochgeschwenderEphysandBehavior/Plots_for_lmc_paper/pooled_psth_pre_and_post_{start}-{end}ms.svg', format='svg')
             plt.show()
         
-    def calculate_psth_pre_post_and_plot_allgoodchannels(self, recording_name, firing_rate_estimates, base_dir, bin_size=0.001, pre_trials=30, post_trials=30, zoom_in=False):
+    def calculate_psth_pre_post_and_plot_allgoodchannels(self, recording_name, firing_rate_estimates, base_dir=DEFAULT_OUTPUT_BASE_DIR, bin_size=0.001, pre_trials=30, post_trials=30, zoom_in=False):
         """
         Calculate and plot the Peri-Stimulus Time Histogram (PSTH) for both pre and post epochs for all good and noisy channels.
         
@@ -1404,7 +1584,7 @@ class NeuralAnalysis:
         firing_rate_estimates : ndarray
             A 2D array where each row represents a channel and each column represents a time bin.
         base_dir : str
-            The base directory where the figure will be saved.
+            The base directory where the figure will be saved. Must not exist prior to generation.
         bin_size : float, optional
             The bin size for discretizing the spike times, in seconds. Default is 0.001.
         pre_trials : int, optional
@@ -1444,48 +1624,71 @@ class NeuralAnalysis:
         - The third level keys are 'pre-luciferin_mean_psth' and 'post-luciferin_mean_psth', and their values are the mean PSTHs for those epochs.
         - For noisy channels, the values for 'pre-luciferin_mean_psth' and 'post-luciferin_mean_psth' will be set to 'N/A'.
         """
+        if self.recording_results_df is None:
+            raise ValueError("Recording results are not loaded. Initialize NeuralAnalysis with a valid data root.")
+
+        matching_rows = self.recording_results_df[
+            self.recording_results_df['recording_name'] == recording_name
+        ]
+        if matching_rows.empty:
+            raise ValueError(f"Recording {recording_name} not found in recording_results_df.")
+
+        recording_row = matching_rows.iloc[0]
+
+        if not recording_row.get('has_required_assets', False):
+            raise FileNotFoundError(f"{recording_name} is missing required inputs (MUA data and/or timestamp_s.mat).")
+
+        base_dir_path = Path(base_dir).resolve()
+        if base_dir_path.exists() and base_dir_path not in self._created_output_dirs:
+            raise FileExistsError(f"Output directory {base_dir_path} already exists. Provide a new path to avoid overwriting.")
+
+        if not hasattr(self, 'stimulation_data_df'):
+            raise ValueError("Stimulation data has not been loaded. Run extract_stimulation_data() before calculating PSTHs.")
+
+        spike_times_path_val = recording_row['spike_times_path']
+        spike_times_path = None if (spike_times_path_val is None or pd.isna(spike_times_path_val)) else Path(spike_times_path_val)
+
+        mua_path_val = recording_row['mua_data_path']
+        mua_path = None if (mua_path_val is None or pd.isna(mua_path_val)) else Path(mua_path_val)
+        timestamp_path_val = recording_row['timestamp_path']
+        timestamp_path = None if (timestamp_path_val is None or pd.isna(timestamp_path_val)) else Path(timestamp_path_val)
+
+        required_files = {
+            "MUA data": mua_path,
+            "timestamp_s.mat": timestamp_path,
+        }
+        for label, path_obj in required_files.items():
+            if path_obj is None or not path_obj.exists():
+                raise FileNotFoundError(f"Missing {label} for {recording_name}: {path_obj}")
+
+        if spike_times_path is None or not spike_times_path.exists():
+            print(f"Warning: spike_times file not found for {recording_name}. Ensure firing_rate_estimates were computed elsewhere.")
+
         # Initialize a dictionary to store mean PSTHs
         mean_psths_dict = {recording_name: {}}
         
         # Define time bins
         time_axis_full = np.arange(-499, 1001)  # Assuming 1500 time bins from -499 to 1000 ms
         time_axis_zoom = np.arange(-25, 51)  # Assuming 75 time bins from -25 to 50 ms
-        
-        # Check if the base directory exists
-        if not os.path.exists(base_dir):
-            print(f"Base directory {base_dir} does not exist.")
-            return
-
-        # Create a new folder within the base directory
-        new_folder = 'whisker_psths_prevspost'
-        full_path = os.path.join(base_dir, new_folder)
-        if not os.path.exists(full_path):
-            os.makedirs(full_path)
 
         # Initialize a 32x4 grid of subplots
-        fig, axs = plt.subplots(32, 4, figsize=(20, 160))
+        fig, axs = plt.subplots(self.n_channels, 4, figsize=(20, 5 * self.n_channels))
         
         # Add a title to the entire figure
         fig.suptitle(f'Recording: {recording_name}', fontsize=16)
         
-        good_channels = self.recording_results_df.loc[
-            self.recording_results_df['recording_name'] == recording_name, 
-            'good_channels'
-        ].values[0]
-        noisy_channels = self.recording_results_df.loc[
-            self.recording_results_df['recording_name'] == recording_name, 
-            'noisy_channels'
-        ].values[0]
+        good_channels = recording_row['good_channels']
+        noisy_channels = recording_row['noisy_channels']
         
         # Exclude noisy channels from good channels
         good_channels = [ch for ch in good_channels if ch not in noisy_channels]
 
         # Loop through all channels (both good and noisy)
-        all_channels = set(good_channels).union(set(noisy_channels))
+        all_channels = sorted(set(good_channels).union(set(noisy_channels)))
         
-        for idx, ch in enumerate(all_channels):
+        for ch in all_channels:
             for stim_id in range(1, 5):  # Loop through each stimulation ID
-                ax = axs[idx, stim_id - 1]  # Get the correct axes
+                ax = axs[ch, stim_id - 1]  # Place each channel on its own row
                 
                 # Check if the channel is good or noisy
                 if ch in good_channels:
@@ -1495,6 +1698,20 @@ class NeuralAnalysis:
                         (self.stimulation_data_df['recording_name'] == recording_name) & 
                         (self.stimulation_data_df['stimulation_ids'] == stim_id)
                     ]
+                    if stim_data.empty:
+                        ax.set_facecolor('lightgray')
+                        ax.set_title(f'Ch {ch+1}, Stim ID = {stim_id} (No trials)')
+                        electrode_name = f"Ch_{ch+1}"
+                        if electrode_name not in mean_psths_dict[recording_name]:
+                            mean_psths_dict[recording_name][electrode_name] = {}
+                        if 'Stim_IDs' not in mean_psths_dict[recording_name][electrode_name]:
+                            mean_psths_dict[recording_name][electrode_name]['Stim_IDs'] = {}
+                        stim_id_dict = {
+                            'pre-luciferin_mean_psth': 'N/A',
+                            'post-luciferin_mean_psth': 'N/A'
+                        }
+                        mean_psths_dict[recording_name][electrode_name]['Stim_IDs'][f"Stim_{stim_id}"] = stim_id_dict
+                        continue
                     stim_data_pre = stim_data.iloc[:pre_trials] # grabs all the rows up to the pre_trials value 
                     stim_data_post = stim_data.iloc[-post_trials:] # grabs all the rows from the end of the dataframe to the post_trials value
 
@@ -1517,20 +1734,24 @@ class NeuralAnalysis:
                     
                     #plotting
                     
+                    has_lines = False
                     if zoom_in:
                         ax.plot(time_axis_zoom, mean_psth_pre[475:551], color='grey', label='Pre', zorder=2)
                         ax.plot(time_axis_zoom, mean_psth_post[475:551], color='blue', label='Post', zorder=1)
+                        has_lines = True
                         ax.set_xticks(np.arange(-25, 51, 5))
                         ax.set_xticklabels(np.arange(-25, 51, 5), rotation=45)
                     else: 
                         ax.plot(time_axis_full, mean_psth_pre, color='grey', label='Pre', zorder=2)
                         ax.plot(time_axis_full, mean_psth_post, color='blue', label='Post', zorder=1)
+                        has_lines = True
                         ax.set_xticks(np.arange(-500, 1001, 100))
                         ax.set_xticklabels(np.arange(-500, 1001, 100), rotation=45)
                         
                     ax.axvline(x=0, color='r', linestyle='--')  # Mark stimulus onset at time = 0
                     ax.set_title(f'Ch {ch+1}, Stim ID = {stim_id}')
-                    ax.legend()
+                    if has_lines:
+                        ax.legend()
                     
                     # Store the mean PSTHs in the dictionary
                     electrode_name = f"Ch_{ch+1}"
@@ -1572,9 +1793,13 @@ class NeuralAnalysis:
                     mean_psths_dict[recording_name][electrode_name]['Stim_IDs'][f"Stim_{stim_id}"] = stim_id_dict                 
                                 
         # Save the figure
-        save_path = os.path.join(full_path, f"{recording_name}_psth_prevspost.svg")
+        output_dir = self._prepare_output_directory(base_dir_path, "whisker_psths_prevspost_regenerated")
+        save_path = output_dir / f"{recording_name}_psth_prevspost_REGEN.svg"
+        if save_path.exists():
+            raise FileExistsError(f"Refusing to overwrite existing figure at {save_path}")
         plt.xticks(rotation=45)
         plt.savefig(save_path, dpi=300)
+        plt.close(fig)
         print(f"Figure saved at {save_path}")
         
         return mean_psths_dict
@@ -1622,7 +1847,7 @@ class NeuralAnalysis:
         
         return mean_psth
     
-    def plot_grouped_mean_and_sem_psth(self, list_of_dicts):
+    def plot_grouped_mean_and_sem_psth(self, list_of_dicts, base_dir=DEFAULT_OUTPUT_BASE_DIR):
         """
         Plot the mean and SEM of the mean PSTHs for both pre and post epochs, grouped by the group_name.
 
@@ -1636,12 +1861,22 @@ class NeuralAnalysis:
         None
             This function will generate and display the plot.
         """
-        # Initialize dictionaries to store group data
+        if self.recording_results_df is None:
+            raise ValueError("Recording results are not loaded. Initialize NeuralAnalysis with a valid data root.")
+        if not list_of_dicts:
+            raise ValueError("No PSTH dictionaries were provided for plotting.")
+
+        base_dir_path = Path(base_dir).resolve()
+        if base_dir_path.exists() and base_dir_path not in self._created_output_dirs:
+            raise FileExistsError(f"Output directory {base_dir_path} already exists. Provide a new path to avoid overwriting.")
+
+        # Initialize dictionaries to store group data per stimulus
         group_data = {}
         unique_group_names = self.recording_results_df['group_name'].unique()
+        stim_ids = [1, 2, 3, 4]
 
         for group_name in unique_group_names:
-            group_data[group_name] = {'pre': [], 'post': []}
+            group_data[group_name] = {stim_id: {'pre': [], 'post': []} for stim_id in stim_ids}
 
         # Loop through each dictionary in the list
         for mean_psths_dict in list_of_dicts:
@@ -1649,39 +1884,77 @@ class NeuralAnalysis:
                 group_name = self.recording_results_df.loc[self.recording_results_df['recording_name'] == recording_name, 'group_name'].values[0]
                 
                 for channel, epoch_data in channel_data.items():
-                    pre_data = epoch_data['pre-luciferin_mean_psth']
-                    post_data = epoch_data['post-luciferin_mean_psth']
+                    stim_entries = epoch_data.get('Stim_IDs', {})
+                    if not stim_entries:
+                        continue
 
-                    if pre_data != 'N/A' and post_data != 'N/A':
-                        print(f"Appending data for {recording_name}, {channel}. Shape of pre_data: {np.array(pre_data).shape}, Shape of post_data: {np.array(post_data).shape}")
-                        
-                        group_data[group_name]['pre'].append(pre_data)
-                        group_data[group_name]['post'].append(post_data)
+                    for stim_key, stim_epoch_data in stim_entries.items():
+                        try:
+                            stim_id = int(stim_key.split('_')[-1])
+                        except Exception:
+                            continue
+                        if stim_id not in stim_ids:
+                            continue
 
-        # Generate the plot
-        plt.figure(figsize=(10, 6))
+                        pre_data = stim_epoch_data.get('pre-luciferin_mean_psth')
+                        post_data = stim_epoch_data.get('post-luciferin_mean_psth')
 
-        for group_name, epoch_data in group_data.items():
-            pre_data = np.array(epoch_data['pre'])
-            post_data = np.array(epoch_data['post'])
+                        if pre_data is None or post_data is None:
+                            continue
+                        if pre_data == 'N/A' or post_data == 'N/A':
+                            continue
 
-            mean_pre = np.nanmean(pre_data, axis=0)
-            sem_pre = np.nanstd(pre_data, axis=0) / np.sqrt(pre_data.shape[0])
+                        pre_arr = np.array(pre_data)
+                        post_arr = np.array(post_data)
 
-            mean_post = np.nanmean(post_data, axis=0)
-            sem_post = np.nanstd(post_data, axis=0) / np.sqrt(post_data.shape[0])
+                        if pre_arr.size == 0 or post_arr.size == 0:
+                            continue
 
-            plt.plot(mean_pre, label=f"{group_name} Pre", color='blue')
-            plt.fill_between(range(len(mean_pre)), mean_pre - sem_pre, mean_pre + sem_pre, color='blue', alpha=0.3)
+                        group_data[group_name][stim_id]['pre'].append(pre_arr)
+                        group_data[group_name][stim_id]['post'].append(post_arr)
 
-            plt.plot(mean_post, label=f"{group_name} Post", color='grey')
-            plt.fill_between(range(len(mean_post)), mean_post - sem_post, mean_post + sem_post, color='grey', alpha=0.3)
+        # Generate the plot: 1x4, each stim id column, overlay group pre/post
+        fig, axes = plt.subplots(1, 4, figsize=(20, 5), sharey=True)
 
-        plt.legend()
-        plt.xlabel('Time (ms)')
-        plt.ylabel('Firing Rate (Hz)')
-        plt.title('Grouped Mean and SEM PSTH')
-        plt.show()
+        for idx, stim_id in enumerate(stim_ids):
+            ax = axes[idx]
+            plotted = False
+            for group_name, stim_dict in group_data.items():
+                pre_list = np.array(stim_dict[stim_id]['pre'])
+                post_list = np.array(stim_dict[stim_id]['post'])
+
+                if pre_list.size == 0 or post_list.size == 0:
+                    continue
+
+                mean_pre = np.nanmean(pre_list, axis=0)
+                sem_pre = np.nanstd(pre_list, axis=0) / np.sqrt(pre_list.shape[0])
+
+                mean_post = np.nanmean(post_list, axis=0)
+                sem_post = np.nanstd(post_list, axis=0) / np.sqrt(post_list.shape[0])
+
+                ax.plot(mean_pre, label=f"{group_name} Pre", color='blue')
+                ax.fill_between(range(len(mean_pre)), mean_pre - sem_pre, mean_pre + sem_pre, color='blue', alpha=0.3)
+
+                ax.plot(mean_post, label=f"{group_name} Post", color='grey')
+                ax.fill_between(range(len(mean_post)), mean_post - sem_post, mean_post + sem_post, color='grey', alpha=0.3)
+                plotted = True
+
+            ax.set_title(f"Stim {stim_id}")
+            ax.set_xlabel('Time (ms)')
+            if idx == 0:
+                ax.set_ylabel('Firing Rate (Hz)')
+            if plotted:
+                ax.legend()
+
+        figures_dir = self._prepare_output_directory(base_dir_path, "figures")
+        save_path = figures_dir / "grouped_mean_sem_psth_REGEN.svg"
+        if save_path.exists():
+            raise FileExistsError(f"Refusing to overwrite existing figure at {save_path}")
+        plt.savefig(save_path, dpi=300)
+        plt.close(fig)
+        print(f"Grouped PSTH figure saved at {save_path}")
+
+        return save_path
 
 def create_gaussian_window(window_length=0.05, window_sd=0.005, bin_size=0.001):
     """

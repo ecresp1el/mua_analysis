@@ -1,10 +1,10 @@
-from neural_analysis_pkg.core import NeuralAnalysis
+from neural_analysis_pkg.core import NeuralAnalysis, DEFAULT_DATA_ROOT
 
 # Define the path to your project folder
-project_folder_path ='/home/cresp1el-local/Documents/MATLAB/Data/lmc_project_v2/Whisker'
+project_folder_path = DEFAULT_DATA_ROOT / "LED"
 
 # Initialize the NeuralAnalysis class with the project folder path
-analysis = NeuralAnalysis(project_folder_path)
+analysis = NeuralAnalysis(DEFAULT_DATA_ROOT)
 
 # Print a message to confirm that the NeuralAnalysis object has been created
 print("NeuralAnalysis object created successfully.")
