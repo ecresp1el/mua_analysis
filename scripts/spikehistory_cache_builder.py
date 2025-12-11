@@ -157,8 +157,7 @@ class SpikeHistoryCacheBuilder:
         }
 
         if verbose:
-            print(f"
-{rec_dir.name}:")
+            print(f"\n{rec_dir.name}:")
             for key, val in summary.items():
                 if key == "rec_dir":
                     continue
@@ -241,7 +240,7 @@ class SpikeHistoryCacheBuilder:
         post_s = POST_MS / 1000.0
         n_time = len(self.time_ms)
         trials = []
-        spikes_rel = np.empty((N_CHANNELS_OUT, 0), dtype=object)
+        trial_spikes = []  # list of rel_times arrays per trial
         firing_tensor = np.zeros((N_CHANNELS_OUT, 0, n_time), dtype=np.float32)
 
         for _, row in stim_df.iterrows():
@@ -256,7 +255,7 @@ class SpikeHistoryCacheBuilder:
 
             mask = (spike_times_abs >= onset - pre_s) & (spike_times_abs <= onset + post_s)
             rel_times = spike_times_abs[mask] - onset
-            spikes_rel = np.concatenate([spikes_rel, rel_times.reshape(1, 1)], axis=1)
+            trial_spikes.append(rel_times)
 
             trials.append(
                 {
@@ -266,6 +265,10 @@ class SpikeHistoryCacheBuilder:
                     "stim_id": row["stimulation_ids"],
                 }
             )
+
+        spikes_rel = np.empty((N_CHANNELS_OUT, len(trial_spikes)), dtype=object)
+        for i, rel_times in enumerate(trial_spikes):
+            spikes_rel[0, i] = rel_times
 
         return firing_tensor, spikes_rel, pd.DataFrame(trials)
 
