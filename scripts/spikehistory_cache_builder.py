@@ -103,7 +103,12 @@ class SpikeHistoryCacheBuilder:
         meta = pd.read_parquet(meta_path) if meta_path.exists() else None
         trials = pd.read_parquet(trials_path) if trials_path.exists() else None
         firing = np.load(firing_path) if firing_path.exists() else None
-        spikes = np.load(spikes_path, allow_pickle=True) if spikes_path.exists() else None
+        # Backward compatibility for object arrays saved with newer numpy (numpy._core)
+        spikes = None
+        if spikes_path.exists():
+            import sys as _sys
+            _sys.modules.setdefault('numpy._core', np.core)
+            spikes = np.load(spikes_path, allow_pickle=True)
         psth = np.load(psth_path) if psth_path.exists() else None
 
         if meta is not None:
