@@ -36,7 +36,8 @@ from scipy.io import loadmat
 from scipy.signal import convolve
 
 DATA_ROOT = Path("/Volumes/MannySSD/lmc_project_v2_MINIMAL")
-DEFAULT_OUTPUT_BASE = Path("/Volumes/MannySSD/PSTH_regenerated_cache_lmc_run1")
+# Default output base set to latest successful run; change for new runs.
+DEFAULT_OUTPUT_BASE = Path("/Volumes/MannySSD/PSTH_regenerated_cache_lmc_run3")
 SAMPLING_RATE = 10_000  # Hz
 BIN_SIZE = 0.001        # seconds
 PRE_MS = 500
