@@ -237,6 +237,7 @@ class SpikeHistoryCacheBuilder:
                     {
                         "recording_name": recording_name,
                         "group_name": row["group_name"],
+                        "modality": group,
                         "analog_path": str(analog_path),
                         "timestamp_path": str(timestamp_path),
                         "good_channels": list(range(N_CHANNELS_OUT)),
@@ -297,6 +298,7 @@ class SpikeHistoryCacheBuilder:
         meta = {
             "recording_name": rec_name,
             "group_name": rec_meta["group_name"],
+            "modality": rec_meta.get("modality", ""),
             "sampling_rate": SAMPLING_RATE,
             "bin_size": BIN_SIZE,
             "good_channels": rec_meta["good_channels"],
