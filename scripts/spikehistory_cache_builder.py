@@ -106,9 +106,10 @@ class SpikeHistoryCacheBuilder:
         # Backward compatibility for object arrays saved with newer numpy (numpy._core)
         spikes = None
         if spikes_path.exists():
-            import sys as _sys
-            _sys.modules.setdefault('numpy._core', np.core)
-            spikes = np.load(spikes_path, allow_pickle=True)
+            try:
+                spikes = np.load(spikes_path, allow_pickle=True)
+            except Exception:
+                spikes = None
         psth = np.load(psth_path) if psth_path.exists() else None
 
         if meta is not None:
@@ -139,18 +140,22 @@ class SpikeHistoryCacheBuilder:
                 },
             }
         if spikes is not None:
-            srel = spikes["spikes_rel"]
-            example_len = 0
-            if srel.size:
-                try:
-                    example_len = len(srel.flatten()[0])
-                except Exception:
-                    example_len = None
-            summary["spikes_rel"] = {
-                "shape": srel.shape,
-                "dtype": str(srel.dtype),
-                "example_length": example_len,
-            }
+            try:
+                srel = spikes["spikes_rel"]
+            except Exception:
+                srel = None
+            if srel is not None:
+                example_len = 0
+                if srel.size:
+                    try:
+                        example_len = len(srel.flatten()[0])
+                    except Exception:
+                        example_len = None
+                summary["spikes_rel"] = {
+                    "shape": srel.shape,
+                    "dtype": str(srel.dtype),
+                    "example_length": example_len,
+                }
         if psth is not None:
             summary["psth_arrays"] = {k: psth[k].shape for k in psth.files}
 
