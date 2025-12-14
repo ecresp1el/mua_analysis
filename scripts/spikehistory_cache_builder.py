@@ -4,7 +4,7 @@ Build per-recording caches (firing rates, spikes, metadata) from the minimal ana
 
 Inputs (read-only):
 - /Volumes/MannySSD/lmc_project_v2_MINIMAL/<LED|Whisker>/SpikeStuff/<group>/<recording>/
-    - AnalogSignal/*analog_downsampled.dat   (10 kHz)
+    - temp_wh_MUA.npy                        (10 kHz MUA trace)
     - MUA/allData/timestamp_s.mat            (onset, offset, stim_id)
     - recording_results.csv                  (for group/recording names)
 
@@ -37,14 +37,14 @@ from scipy.signal import convolve
 
 DATA_ROOT = Path("/Volumes/MannySSD/lmc_project_v2_MINIMAL")
 # Default output base set to latest successful run; change for new runs.
-DEFAULT_OUTPUT_BASE = Path("/Volumes/MannySSD/PSTH_regenerated_cache_lmc_run3")
+DEFAULT_OUTPUT_BASE = Path("/Volumes/MannySSD/PSTH_regenerated_cache_lmc_run5")
 SAMPLING_RATE = 10_000  # Hz
 BIN_SIZE = 0.001        # seconds
 PRE_MS = 500
 POST_MS = 1000
 GAUSS_WINDOW_MS = 50
 GAUSS_SIGMA_MS = 5
-N_CHANNELS_OUT = 1  # analog is single-channel; extend if needed
+N_CHANNELS_OUT = 1  # legacy default; actual channels inferred per file
 
 
 class SpikeHistoryCacheBuilder:
@@ -64,10 +64,10 @@ class SpikeHistoryCacheBuilder:
             print("No recordings found under", self.data_root)
             return rec_df
         rec_df = rec_df.assign(
-            analog_exists=rec_df["analog_path"].apply(lambda p: Path(p).exists()),
+            mua_exists=rec_df["mua_file_path"].apply(lambda p: Path(p).exists()),
             timestamp_exists=rec_df["timestamp_path"].apply(lambda p: Path(p).exists()),
         )
-        print(rec_df[["recording_name", "group_name", "analog_exists", "timestamp_exists"]])
+        print(rec_df[["recording_name", "group_name", "mua_exists", "timestamp_exists"]])
         return rec_df
 
     def summarize_output(self, base: Path | None = None, max_records: int = 5):
@@ -183,21 +183,39 @@ class SpikeHistoryCacheBuilder:
         k = np.exp(-0.5 * (x / sigma_samples) ** 2)
         return k / k.sum()
 
-    def _compute_firing_and_spikes(self, analog_path: Path):
-        signal = np.fromfile(analog_path, dtype=np.float32)
-        noise = np.median(np.abs(signal)) / 0.6745
+    def _compute_firing_and_spikes(self, mua_file_path: Path):
+        """Compute firing rates and spike times per channel from MUA."""
+        signal = np.load(mua_file_path)
+        if signal.ndim == 1:
+            signal = signal[:, None]
+        # ensure (samples, channels)
+        if signal.shape[0] < signal.shape[1]:
+            signal = signal.T
+        signal = signal.astype(np.float32)
+        # median-center per channel
+        signal = signal - np.median(signal, axis=0, keepdims=True)
+
+        n_samples, n_ch = signal.shape
+        noise = np.median(np.abs(signal), axis=0) / 0.6745  # per channel
         spikes_mask = signal < (-3 * noise)
 
         samples_per_bin = int(SAMPLING_RATE * BIN_SIZE)  # 10 samples
-        n_full_bins = spikes_mask.size // samples_per_bin
+        n_full_bins = n_samples // samples_per_bin
         if n_full_bins == 0:
-            raise ValueError(f"No full bins for {analog_path}")
-        trimmed = spikes_mask[: n_full_bins * samples_per_bin]
-        binned_counts = trimmed.reshape(n_full_bins, samples_per_bin).sum(axis=1)
-        firing_hz = binned_counts / BIN_SIZE  # counts per 1 ms -> Hz
-        smoothed = convolve(firing_hz, self.kernel, mode="same")
+            raise ValueError(f"No full bins for {mua_file_path}")
 
-        spike_times_abs = np.nonzero(spikes_mask)[0] / SAMPLING_RATE
+        n_keep = n_full_bins * samples_per_bin
+        spikes_trim = spikes_mask[:n_keep, :]
+        # reshape to (bins, samples_per_bin, channels) then sum over bin samples
+        binned_counts = spikes_trim.reshape(n_full_bins, samples_per_bin, n_ch).sum(axis=1)
+        fr_hz = binned_counts / BIN_SIZE  # counts per 1 ms -> Hz
+
+        # smooth per channel
+        smoothed = np.vstack([
+            convolve(fr_hz[:, ch], self.kernel, mode="same") for ch in range(n_ch)
+        ])  # (channels, time_bins)
+
+        spike_times_abs = [np.nonzero(spikes_trim[:, ch])[0] / SAMPLING_RATE for ch in range(n_ch)]
         return smoothed, spike_times_abs
 
     def _load_stim_df(self, recording_name: str, timestamp_path: Path) -> pd.DataFrame:
@@ -224,11 +242,13 @@ class SpikeHistoryCacheBuilder:
             for _, row in df.iterrows():
                 recording_name = row["recording_name"]
                 rec_dir = self.data_root / group / "SpikeStuff" / row["group_name"] / recording_name
-                analog_candidates = list((rec_dir / "AnalogSignal").glob("*analog_downsampled.dat"))
-                if not analog_candidates:
-                    print(f"Skip {recording_name}: no analog_downsampled.dat")
+                # Prefer explicit MUA path from the CSV if present; otherwise fall back to temp_wh_MUA.npy
+                mua_file_path = Path(row["mua_data_path"]) if "mua_data_path" in row else None
+                if mua_file_path is None or not mua_file_path.exists():
+                    mua_file_path = rec_dir / "temp_wh_MUA.npy"
+                if not mua_file_path.exists():
+                    print(f"Skip {recording_name}: no temp_wh_MUA.npy")
                     continue
-                analog_path = analog_candidates[0]
                 timestamp_path = rec_dir / "MUA" / "allData" / "timestamp_s.mat"
                 if not timestamp_path.exists():
                     print(f"Skip {recording_name}: missing timestamp_s.mat")
@@ -238,7 +258,7 @@ class SpikeHistoryCacheBuilder:
                         "recording_name": recording_name,
                         "group_name": row["group_name"],
                         "modality": group,
-                        "analog_path": str(analog_path),
+                        "mua_file_path": str(mua_file_path),
                         "timestamp_path": str(timestamp_path),
                         "good_channels": list(range(N_CHANNELS_OUT)),
                         "noisy_channels": [],
@@ -247,27 +267,29 @@ class SpikeHistoryCacheBuilder:
                 stim_rows.append(self._load_stim_df(recording_name, timestamp_path))
         return pd.DataFrame(rec_rows), (pd.concat(stim_rows, ignore_index=True) if stim_rows else pd.DataFrame())
 
-    def _align_trials(self, firing_hz: np.ndarray, spike_times_abs: np.ndarray, stim_df: pd.DataFrame):
+    def _align_trials(self, firing_hz: np.ndarray, spike_times_abs: list[np.ndarray], stim_df: pd.DataFrame):
         pre_s = PRE_MS / 1000.0
         post_s = POST_MS / 1000.0
         n_time = len(self.time_ms)
+        n_ch = firing_hz.shape[0]
         trials = []
-        trial_spikes = []  # list of rel_times arrays per trial
-        firing_tensor = np.zeros((N_CHANNELS_OUT, 0, n_time), dtype=np.float32)
+        trial_spikes = [[] for _ in range(n_ch)]  # list per channel
+        firing_slices = []
 
         for _, row in stim_df.iterrows():
             onset = row["onset_times"]
             start_bin = int((onset - pre_s) / BIN_SIZE)
             end_bin = start_bin + n_time
-            if start_bin < 0 or end_bin > firing_hz.shape[0]:
+            if start_bin < 0 or end_bin > firing_hz.shape[1]:
                 continue
-            fr_slice = firing_hz[start_bin:end_bin]
-            fr_slice = fr_slice[np.newaxis, :]  # 1 x time
-            firing_tensor = np.concatenate([firing_tensor, fr_slice[:, np.newaxis, :]], axis=1)
+            fr_slice = firing_hz[:, start_bin:end_bin]  # (ch, time)
+            firing_slices.append(fr_slice[:, None, :])
 
-            mask = (spike_times_abs >= onset - pre_s) & (spike_times_abs <= onset + post_s)
-            rel_times = spike_times_abs[mask] - onset
-            trial_spikes.append(rel_times)
+            for ch in range(n_ch):
+                spikes_ch = spike_times_abs[ch]
+                mask = (spikes_ch >= onset - pre_s) & (spikes_ch <= onset + post_s)
+                rel_times = spikes_ch[mask] - onset
+                trial_spikes[ch].append(rel_times)
 
             trials.append(
                 {
@@ -278,21 +300,25 @@ class SpikeHistoryCacheBuilder:
                 }
             )
 
-        spikes_rel = np.empty((N_CHANNELS_OUT, len(trial_spikes)), dtype=object)
-        for i, rel_times in enumerate(trial_spikes):
-            spikes_rel[0, i] = rel_times
+        firing_tensor = np.concatenate(firing_slices, axis=1) if firing_slices else np.zeros((n_ch, 0, n_time), dtype=np.float32)
+
+        n_trials = len(trials)
+        spikes_rel = np.empty((n_ch, n_trials), dtype=object)
+        for ch in range(n_ch):
+            for i, rel_times in enumerate(trial_spikes[ch]):
+                spikes_rel[ch, i] = rel_times
 
         return firing_tensor, spikes_rel, pd.DataFrame(trials)
 
     def _save_recording_cache(self, rec_meta: dict, stim_df: pd.DataFrame):
         rec_name = rec_meta["recording_name"]
-        rec_dir = self.output_base / rec_meta["group_name"] / rec_name
+        rec_dir = self.output_base / rec_meta.get("modality", "") / rec_meta["group_name"] / rec_name
         if rec_dir.exists():
             print(f"Skip {rec_name}: output already exists at {rec_dir}")
             return
         rec_dir.mkdir(parents=True, exist_ok=False)
 
-        firing_hz, spike_times_abs = self._compute_firing_and_spikes(Path(rec_meta["analog_path"]))
+        firing_hz, spike_times_abs = self._compute_firing_and_spikes(Path(rec_meta["mua_file_path"]))
         firing_tensor, spikes_rel, trials_df = self._align_trials(firing_hz, spike_times_abs, stim_df)
 
         meta = {
@@ -301,8 +327,8 @@ class SpikeHistoryCacheBuilder:
             "modality": rec_meta.get("modality", ""),
             "sampling_rate": SAMPLING_RATE,
             "bin_size": BIN_SIZE,
-            "good_channels": rec_meta["good_channels"],
-            "noisy_channels": rec_meta["noisy_channels"],
+            "good_channels": list(range(firing_tensor.shape[0])),
+            "noisy_channels": [],
             "n_trials": firing_tensor.shape[1],
             "n_channels": firing_tensor.shape[0],
             "n_timebins": firing_tensor.shape[2],
